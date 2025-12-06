@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Lock, User, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Lock, User, ArrowRight, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePOS } from '@/contexts/POSContext';
-import { users } from '@/data/mockData';
+import { getStoredUsers } from '@/lib/storage';
 import { toast } from 'sonner';
 
 export const Login = () => {
   const [pin, setPin] = useState('');
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { setCurrentUser } = usePOS();
+  const { setCurrentUser, isOffline } = usePOS();
+  
+  const users = getStoredUsers();
 
   const handlePinInput = (digit: string) => {
     if (pin.length < 4) {
@@ -52,6 +54,14 @@ export const Login = () => {
       </div>
 
       <div className="w-full max-w-md animate-fade-in relative z-10">
+        {/* Offline Badge */}
+        {isOffline && (
+          <div className="flex items-center justify-center gap-2 mb-4 py-2 px-4 bg-warning/10 border border-warning/20 rounded-full text-warning text-sm font-medium">
+            <WifiOff className="w-4 h-4" />
+            Offline Mode - Data stored locally
+          </div>
+        )}
+
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-purple-500 shadow-2xl shadow-primary/30 mb-4">

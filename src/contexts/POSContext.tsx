@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, Transaction, User } from '@/types/pos';
-import { products as initialProducts, users, generateMockTransactions } from '@/data/mockData';
+import { 
+  getStoredProducts, 
+  saveProducts, 
+  getStoredTransactions, 
+  saveTransactions,
+  getStoredCurrentUser,
+  saveCurrentUser,
+  getStoredSettings,
+  saveSettings,
+  POSSettings
+} from '@/lib/storage';
 
 interface POSContextType {
   currentUser: User | null;
@@ -17,15 +27,64 @@ interface POSContextType {
   cartTotal: number;
   cartSubtotal: number;
   cartTax: number;
+  settings: POSSettings;
+  updateSettings: (newSettings: Partial<POSSettings>) => void;
+  isOffline: boolean;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
 
 export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [currentUser, setCurrentUserState] = useState<User | null>(() => getStoredCurrentUser());
+  const [products, setProductsState] = useState<Product[]>(() => getStoredProducts());
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>(generateMockTransactions());
+  const [transactions, setTransactionsState] = useState<Transaction[]>(() => getStoredTransactions());
+  const [settings, setSettingsState] = useState<POSSettings>(() => getStoredSettings());
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  // Track online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Persist current user
+  const setCurrentUser = (user: User | null) => {
+    setCurrentUserState(user);
+    saveCurrentUser(user);
+  };
+
+  // Persist products
+  const setProducts: React.Dispatch<React.SetStateAction<Product[]>> = (action) => {
+    setProductsState(prev => {
+      const newProducts = typeof action === 'function' ? action(prev) : action;
+      saveProducts(newProducts);
+      return newProducts;
+    });
+  };
+
+  // Persist transactions
+  const setTransactions = (newTransactions: Transaction[]) => {
+    setTransactionsState(newTransactions);
+    saveTransactions(newTransactions);
+  };
+
+  // Update settings
+  const updateSettings = (newSettings: Partial<POSSettings>) => {
+    setSettingsState(prev => {
+      const updated = { ...prev, ...newSettings };
+      saveSettings(updated);
+      return updated;
+    });
+  };
 
   const addToCart = (product: Product) => {
     setCart(prevCart => {
@@ -62,7 +121,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addTransaction = (transaction: Transaction) => {
-    setTransactions(prev => [transaction, ...prev]);
+    const newTransactions = [transaction, ...transactions];
+    setTransactions(newTransactions);
     
     // Update stock
     transaction.items.forEach(item => {
@@ -76,11 +136,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const taxRate = settings.taxRate / 100;
   const cartSubtotal = cart.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
     0
   );
-  const cartTax = cartSubtotal * 0.1;
+  const cartTax = cartSubtotal * taxRate;
   const cartTotal = cartSubtotal + cartTax;
 
   return (
@@ -100,6 +161,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         cartTotal,
         cartSubtotal,
         cartTax,
+        settings,
+        updateSettings,
+        isOffline,
       }}
     >
       {children}

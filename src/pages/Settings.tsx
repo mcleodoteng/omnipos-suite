@@ -1,18 +1,83 @@
+import { useState, useRef } from 'react';
 import { 
   Store, 
   Printer, 
   Receipt, 
   Bell, 
   Database,
-  Palette,
-  Info
+  Info,
+  Download,
+  Upload,
+  Trash2,
+  Save,
+  HardDrive
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { usePOS } from '@/contexts/POSContext';
+import { exportAllData, importAllData, clearAllData } from '@/lib/storage';
+import { toast } from 'sonner';
 
 export const Settings = () => {
+  const { settings, updateSettings, products, transactions } = usePOS();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [localSettings, setLocalSettings] = useState(settings);
+
+  const handleSave = () => {
+    updateSettings(localSettings);
+    toast.success('Settings saved successfully!');
+  };
+
+  const handleExport = () => {
+    const data = exportAllData();
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `swiftpos-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Data exported successfully!');
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (importAllData(content)) {
+        toast.success('Data imported successfully! Please refresh the page.');
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        toast.error('Failed to import data. Invalid file format.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleClearData = () => {
+    if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+      clearAllData();
+      toast.success('All data cleared. Refreshing...');
+      setTimeout(() => window.location.reload(), 1000);
+    }
+  };
+
+  const storageUsed = () => {
+    let total = 0;
+    for (let key in localStorage) {
+      if (key.startsWith('swiftpos_')) {
+        total += localStorage.getItem(key)?.length || 0;
+      }
+    }
+    return (total / 1024).toFixed(2);
+  };
+
   return (
     <MainLayout>
       <div className="p-6 space-y-6 max-w-4xl">
@@ -20,6 +85,91 @@ export const Settings = () => {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Settings</h1>
           <p className="text-muted-foreground">Configure your POS system</p>
+        </div>
+
+        {/* Local Storage Info */}
+        <div className="pos-card bg-primary/5 border-primary/20">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <HardDrive className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Local Storage Mode</h3>
+              <p className="text-sm text-muted-foreground">All data is stored locally on this device</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="p-3 rounded-lg bg-card">
+              <p className="text-muted-foreground">Products</p>
+              <p className="text-lg font-bold font-mono-numbers text-foreground">{products.length}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-card">
+              <p className="text-muted-foreground">Transactions</p>
+              <p className="text-lg font-bold font-mono-numbers text-foreground">{transactions.length}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-card">
+              <p className="text-muted-foreground">Storage Used</p>
+              <p className="text-lg font-bold font-mono-numbers text-foreground">{storageUsed()} KB</p>
+            </div>
+            <div className="p-3 rounded-lg bg-card">
+              <p className="text-muted-foreground">Status</p>
+              <p className="text-lg font-bold text-success">Active</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Data Management */}
+        <div className="pos-card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-warning/10">
+              <Database className="w-5 h-5 text-warning" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Data Management</h3>
+              <p className="text-sm text-muted-foreground">Backup, restore, or clear your data</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button variant="outline" className="h-auto py-4" onClick={handleExport}>
+              <div className="text-center">
+                <Download className="w-6 h-6 mx-auto mb-2" />
+                <p className="font-medium">Export Backup</p>
+                <p className="text-xs text-muted-foreground">Download all data as JSON</p>
+              </div>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="h-auto py-4" 
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <div className="text-center">
+                <Upload className="w-6 h-6 mx-auto mb-2" />
+                <p className="font-medium">Import Backup</p>
+                <p className="text-xs text-muted-foreground">Restore from JSON file</p>
+              </div>
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+            
+            <Button 
+              variant="outline" 
+              className="h-auto py-4 border-destructive/30 hover:bg-destructive/10 hover:text-destructive" 
+              onClick={handleClearData}
+            >
+              <div className="text-center">
+                <Trash2 className="w-6 h-6 mx-auto mb-2" />
+                <p className="font-medium">Clear All Data</p>
+                <p className="text-xs text-muted-foreground">Reset to default state</p>
+              </div>
+            </Button>
+          </div>
         </div>
 
         {/* Store Information */}
@@ -37,15 +187,27 @@ export const Settings = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Store Name</label>
-              <Input defaultValue="SwiftPOS Store" className="mt-1" />
+              <Input 
+                value={localSettings.storeName} 
+                onChange={(e) => setLocalSettings(s => ({ ...s, storeName: e.target.value }))}
+                className="mt-1" 
+              />
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
-              <Input defaultValue="(555) 123-4567" className="mt-1" />
+              <Input 
+                value={localSettings.storePhone} 
+                onChange={(e) => setLocalSettings(s => ({ ...s, storePhone: e.target.value }))}
+                className="mt-1" 
+              />
             </div>
             <div className="md:col-span-2">
               <label className="text-sm font-medium text-muted-foreground">Address</label>
-              <Input defaultValue="123 Main Street, City, State 12345" className="mt-1" />
+              <Input 
+                value={localSettings.storeAddress} 
+                onChange={(e) => setLocalSettings(s => ({ ...s, storeAddress: e.target.value }))}
+                className="mt-1" 
+              />
             </div>
           </div>
         </div>
@@ -68,21 +230,30 @@ export const Settings = () => {
                 <p className="font-medium text-foreground">Show Store Logo</p>
                 <p className="text-sm text-muted-foreground">Display logo on printed receipts</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={localSettings.showLogo}
+                onCheckedChange={(checked) => setLocalSettings(s => ({ ...s, showLogo: checked }))}
+              />
             </div>
             <div className="flex items-center justify-between py-3 border-b border-border">
               <div>
                 <p className="font-medium text-foreground">Auto-Print Receipts</p>
                 <p className="text-sm text-muted-foreground">Automatically print after each sale</p>
               </div>
-              <Switch />
+              <Switch 
+                checked={localSettings.autoPrint}
+                onCheckedChange={(checked) => setLocalSettings(s => ({ ...s, autoPrint: checked }))}
+              />
             </div>
             <div className="flex items-center justify-between py-3">
               <div>
                 <p className="font-medium text-foreground">Include Tax Breakdown</p>
                 <p className="text-sm text-muted-foreground">Show detailed tax information</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={localSettings.showTaxBreakdown}
+                onCheckedChange={(checked) => setLocalSettings(s => ({ ...s, showTaxBreakdown: checked }))}
+              />
             </div>
           </div>
         </div>
@@ -102,9 +273,13 @@ export const Settings = () => {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Receipt Width</label>
-              <select className="mt-1 w-full h-10 rounded-md border border-border bg-background px-3 text-sm">
+              <select 
+                className="mt-1 w-full h-10 rounded-md border border-border bg-background px-3 text-sm"
+                value={localSettings.receiptWidth}
+                onChange={(e) => setLocalSettings(s => ({ ...s, receiptWidth: e.target.value as '58' | '80' }))}
+              >
                 <option value="58">58mm</option>
-                <option value="80" selected>80mm</option>
+                <option value="80">80mm</option>
               </select>
             </div>
             <div>
@@ -138,21 +313,30 @@ export const Settings = () => {
                 <p className="font-medium text-foreground">Low Stock Alerts</p>
                 <p className="text-sm text-muted-foreground">Notify when items are running low</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={localSettings.lowStockAlerts}
+                onCheckedChange={(checked) => setLocalSettings(s => ({ ...s, lowStockAlerts: checked }))}
+              />
             </div>
             <div className="flex items-center justify-between py-3 border-b border-border">
               <div>
                 <p className="font-medium text-foreground">Daily Sales Summary</p>
                 <p className="text-sm text-muted-foreground">Send end-of-day reports</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={localSettings.dailySummary}
+                onCheckedChange={(checked) => setLocalSettings(s => ({ ...s, dailySummary: checked }))}
+              />
             </div>
             <div className="flex items-center justify-between py-3">
               <div>
                 <p className="font-medium text-foreground">Sound Effects</p>
                 <p className="text-sm text-muted-foreground">Play sounds for actions</p>
               </div>
-              <Switch />
+              <Switch 
+                checked={localSettings.soundEffects}
+                onCheckedChange={(checked) => setLocalSettings(s => ({ ...s, soundEffects: checked }))}
+              />
             </div>
           </div>
         </div>
@@ -172,11 +356,20 @@ export const Settings = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Tax Rate (%)</label>
-              <Input type="number" defaultValue="10" className="mt-1" />
+              <Input 
+                type="number" 
+                value={localSettings.taxRate} 
+                onChange={(e) => setLocalSettings(s => ({ ...s, taxRate: parseFloat(e.target.value) || 0 }))}
+                className="mt-1" 
+              />
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Tax Name</label>
-              <Input defaultValue="Sales Tax" className="mt-1" />
+              <Input 
+                value={localSettings.taxName} 
+                onChange={(e) => setLocalSettings(s => ({ ...s, taxName: e.target.value }))}
+                className="mt-1" 
+              />
             </div>
           </div>
         </div>
@@ -189,18 +382,20 @@ export const Settings = () => {
             </div>
             <div>
               <h3 className="font-semibold text-foreground">About SwiftPOS</h3>
-              <p className="text-sm text-muted-foreground">Version 1.0.0</p>
+              <p className="text-sm text-muted-foreground">Version 1.0.0 - Offline Edition</p>
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
             SwiftPOS is an ultramodern point of sale system designed for efficient retail operations.
-            Built with love for small businesses.
+            This offline version stores all data locally on your device, ensuring you can operate
+            without an internet connection.
           </p>
         </div>
 
         {/* Save Button */}
         <div className="flex justify-end">
-          <Button variant="pos-primary" size="lg">
+          <Button variant="pos-primary" size="lg" onClick={handleSave}>
+            <Save className="w-5 h-5 mr-2" />
             Save Settings
           </Button>
         </div>

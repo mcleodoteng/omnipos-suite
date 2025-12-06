@@ -7,7 +7,9 @@ import {
   Settings, 
   LogOut,
   Receipt,
-  Users
+  Users,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePOS } from '@/contexts/POSContext';
@@ -25,7 +27,7 @@ const navItems = [
 
 export const Sidebar = () => {
   const location = useLocation();
-  const { currentUser, setCurrentUser } = usePOS();
+  const { currentUser, setCurrentUser, isOffline } = usePOS();
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -46,8 +48,28 @@ export const Sidebar = () => {
         </div>
       </div>
 
+      {/* Offline Indicator */}
+      <div className={cn(
+        'mx-3 mt-3 px-3 py-2 rounded-lg flex items-center gap-2 text-xs font-medium',
+        isOffline 
+          ? 'bg-warning/10 text-warning border border-warning/20' 
+          : 'bg-success/10 text-success border border-success/20'
+      )}>
+        {isOffline ? (
+          <>
+            <WifiOff className="w-4 h-4" />
+            Offline Mode
+          </>
+        ) : (
+          <>
+            <Wifi className="w-4 h-4" />
+            Online
+          </>
+        )}
+      </div>
+
       {/* Navigation */}
-      <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (

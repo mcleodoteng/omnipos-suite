@@ -1,4 +1,4 @@
-import { Product, Transaction, User } from '@/types/pos';
+import { Product, Transaction, User, CashDrawer } from '@/types/pos';
 import { products as defaultProducts, users as defaultUsers } from '@/data/mockData';
 
 const STORAGE_KEYS = {
@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   USERS: 'swiftpos_users',
   SETTINGS: 'swiftpos_settings',
   CURRENT_USER: 'swiftpos_current_user',
+  CASH_DRAWER: 'swiftpos_cash_drawer',
 };
 
 // Products
@@ -19,7 +20,6 @@ export const getStoredProducts = (): Product[] => {
   } catch (e) {
     console.error('Error loading products from storage:', e);
   }
-  // Initialize with default products
   saveProducts(defaultProducts);
   return defaultProducts;
 };
@@ -38,7 +38,6 @@ export const getStoredTransactions = (): Transaction[] => {
     const stored = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
     if (stored) {
       const transactions = JSON.parse(stored);
-      // Convert date strings back to Date objects
       return transactions.map((tx: any) => ({
         ...tx,
         timestamp: new Date(tx.timestamp),
@@ -68,7 +67,6 @@ export const getStoredUsers = (): User[] => {
   } catch (e) {
     console.error('Error loading users from storage:', e);
   }
-  // Initialize with default users
   saveUsers(defaultUsers);
   return defaultUsers;
 };
@@ -106,6 +104,36 @@ export const saveCurrentUser = (user: User | null): void => {
   }
 };
 
+// Cash Drawer
+export const getStoredCashDrawer = (): CashDrawer | null => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.CASH_DRAWER);
+    if (stored) {
+      const drawer = JSON.parse(stored);
+      return {
+        ...drawer,
+        openedAt: new Date(drawer.openedAt),
+        closedAt: drawer.closedAt ? new Date(drawer.closedAt) : undefined,
+      };
+    }
+  } catch (e) {
+    console.error('Error loading cash drawer from storage:', e);
+  }
+  return null;
+};
+
+export const saveCashDrawer = (drawer: CashDrawer | null): void => {
+  try {
+    if (drawer) {
+      localStorage.setItem(STORAGE_KEYS.CASH_DRAWER, JSON.stringify(drawer));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.CASH_DRAWER);
+    }
+  } catch (e) {
+    console.error('Error saving cash drawer to storage:', e);
+  }
+};
+
 // Settings
 export interface POSSettings {
   storeName: string;
@@ -120,6 +148,8 @@ export interface POSSettings {
   lowStockAlerts: boolean;
   dailySummary: boolean;
   soundEffects: boolean;
+  currency: string;
+  lowStockThreshold: number;
 }
 
 const defaultSettings: POSSettings = {
@@ -135,6 +165,8 @@ const defaultSettings: POSSettings = {
   lowStockAlerts: true,
   dailySummary: true,
   soundEffects: false,
+  currency: 'GHS',
+  lowStockThreshold: 20,
 };
 
 export const getStoredSettings = (): POSSettings => {
@@ -171,6 +203,7 @@ export const exportAllData = (): string => {
     transactions: getStoredTransactions(),
     users: getStoredUsers(),
     settings: getStoredSettings(),
+    cashDrawer: getStoredCashDrawer(),
     exportedAt: new Date().toISOString(),
   };
   return JSON.stringify(data, null, 2);
@@ -190,6 +223,7 @@ export const importAllData = (jsonString: string): boolean => {
     }
     if (data.users) saveUsers(data.users);
     if (data.settings) saveSettings(data.settings);
+    if (data.cashDrawer) saveCashDrawer(data.cashDrawer);
     return true;
   } catch (e) {
     console.error('Error importing data:', e);

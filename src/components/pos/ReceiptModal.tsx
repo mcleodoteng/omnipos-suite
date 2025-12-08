@@ -2,6 +2,8 @@ import { useRef } from 'react';
 import { X, Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Transaction } from '@/types/pos';
+import { usePOS } from '@/contexts/POSContext';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface ReceiptModalProps {
   open: boolean;
@@ -11,6 +13,8 @@ interface ReceiptModalProps {
 
 export const ReceiptModal = ({ open, onClose, transaction }: ReceiptModalProps) => {
   const receiptRef = useRef<HTMLDivElement>(null);
+  const { settings } = usePOS();
+  const { formatPrice, symbol } = useCurrency();
 
   const handlePrint = () => {
     const printContent = receiptRef.current?.innerHTML;
@@ -25,7 +29,7 @@ export const ReceiptModal = ({ open, onClose, transaction }: ReceiptModalProps) 
                 font-family: 'Courier New', monospace;
                 font-size: 12px;
                 line-height: 1.4;
-                width: 80mm;
+                width: ${settings.receiptWidth}mm;
                 margin: 0 auto;
                 padding: 10px;
               }
@@ -73,10 +77,9 @@ export const ReceiptModal = ({ open, onClose, transaction }: ReceiptModalProps) 
           >
             {/* Store Header */}
             <div className="text-center border-b mb-2 pb-2" style={{ borderStyle: 'dashed' }}>
-              <div className="font-bold text-lg">SwiftPOS Store</div>
-              <div className="text-sm">123 Main Street</div>
-              <div className="text-sm">City, State 12345</div>
-              <div className="text-sm">Tel: (555) 123-4567</div>
+              <div className="font-bold text-lg">{settings.storeName}</div>
+              <div className="text-sm">{settings.storeAddress}</div>
+              <div className="text-sm">Tel: {settings.storePhone}</div>
             </div>
 
             {/* Transaction Info */}
@@ -87,11 +90,11 @@ export const ReceiptModal = ({ open, onClose, transaction }: ReceiptModalProps) 
               </div>
               <div className="flex justify-between">
                 <span>Date:</span>
-                <span>{transaction.timestamp.toLocaleDateString()}</span>
+                <span>{new Date(transaction.timestamp).toLocaleDateString()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Time:</span>
-                <span>{transaction.timestamp.toLocaleTimeString()}</span>
+                <span>{new Date(transaction.timestamp).toLocaleTimeString()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Cashier:</span>
@@ -107,10 +110,10 @@ export const ReceiptModal = ({ open, onClose, transaction }: ReceiptModalProps) 
                     <span className="truncate" style={{ maxWidth: '60%' }}>
                       {item.product.name}
                     </span>
-                    <span>${(item.product.price * item.quantity).toFixed(2)}</span>
+                    <span>{symbol}{(item.product.price * item.quantity).toFixed(2)}</span>
                   </div>
                   <div className="text-right text-sm" style={{ color: '#666' }}>
-                    {item.quantity} x ${item.product.price.toFixed(2)}
+                    {item.quantity} x {symbol}{item.product.price.toFixed(2)}
                   </div>
                 </div>
               ))}
@@ -120,21 +123,21 @@ export const ReceiptModal = ({ open, onClose, transaction }: ReceiptModalProps) 
             <div className="mb-2">
               <div className="flex justify-between">
                 <span>Subtotal:</span>
-                <span>${transaction.subtotal.toFixed(2)}</span>
+                <span>{symbol}{transaction.subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tax (10%):</span>
-                <span>${transaction.tax.toFixed(2)}</span>
+                <span>{settings.taxName} ({settings.taxRate}%):</span>
+                <span>{symbol}{transaction.tax.toFixed(2)}</span>
               </div>
               {transaction.discount > 0 && (
                 <div className="flex justify-between">
                   <span>Discount:</span>
-                  <span>-${transaction.discount.toFixed(2)}</span>
+                  <span>-{symbol}{transaction.discount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-lg border-t pt-1 mt-1" style={{ borderStyle: 'dashed' }}>
                 <span>TOTAL:</span>
-                <span>${transaction.total.toFixed(2)}</span>
+                <span>{symbol}{transaction.total.toFixed(2)}</span>
               </div>
             </div>
 
@@ -148,11 +151,11 @@ export const ReceiptModal = ({ open, onClose, transaction }: ReceiptModalProps) 
                 <>
                   <div className="flex justify-between">
                     <span>Cash:</span>
-                    <span>${transaction.cashReceived?.toFixed(2)}</span>
+                    <span>{symbol}{transaction.cashReceived?.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-bold">
                     <span>Change:</span>
-                    <span>${transaction.change?.toFixed(2)}</span>
+                    <span>{symbol}{transaction.change?.toFixed(2)}</span>
                   </div>
                 </>
               )}

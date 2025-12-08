@@ -10,24 +10,32 @@ import {
   Upload,
   Trash2,
   Save,
-  HardDrive
+  HardDrive,
+  Coins,
+  Tags,
+  Plus,
+  X
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { usePOS } from '@/contexts/POSContext';
-import { exportAllData, importAllData, clearAllData } from '@/lib/storage';
+import { exportAllData, importAllData, clearAllData, getStoredCategories, saveCategories } from '@/lib/storage';
 import { toast } from 'sonner';
+import { CURRENCIES, Category } from '@/types/pos';
 
 export const Settings = () => {
   const { settings, updateSettings, products, transactions } = usePOS();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [localSettings, setLocalSettings] = useState(settings);
+  const [categories, setCategories] = useState<Category[]>(() => getStoredCategories());
+  const [newCategory, setNewCategory] = useState('');
 
   const handleSave = () => {
     updateSettings(localSettings);
+    saveCategories(categories);
     toast.success('Settings saved successfully!');
   };
 
@@ -66,6 +74,39 @@ export const Settings = () => {
       toast.success('All data cleared. Refreshing...');
       setTimeout(() => window.location.reload(), 1000);
     }
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategory.trim()) return;
+    
+    const exists = categories.some(c => c.name.toLowerCase() === newCategory.toLowerCase());
+    if (exists) {
+      toast.error('Category already exists');
+      return;
+    }
+
+    const colors = ['blue', 'green', 'orange', 'purple', 'pink', 'cyan', 'red', 'yellow'];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    
+    const newCat: Category = {
+      id: Date.now().toString(),
+      name: newCategory.trim(),
+      color: randomColor,
+    };
+    
+    setCategories([...categories, newCat]);
+    setNewCategory('');
+    toast.success(`Category "${newCat.name}" added`);
+  };
+
+  const handleDeleteCategory = (id: string) => {
+    const cat = categories.find(c => c.id === id);
+    if (cat?.name === 'All Items') {
+      toast.error('Cannot delete "All Items" category');
+      return;
+    }
+    setCategories(categories.filter(c => c.id !== id));
+    toast.success('Category deleted');
   };
 
   const storageUsed = () => {
@@ -114,6 +155,98 @@ export const Settings = () => {
             <div className="p-3 rounded-lg bg-card">
               <p className="text-muted-foreground">Status</p>
               <p className="text-lg font-bold text-success">Active</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Currency Settings */}
+        <div className="pos-card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-success/10">
+              <Coins className="w-5 h-5 text-success" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Currency Settings</h3>
+              <p className="text-sm text-muted-foreground">Set your preferred system currency</p>
+            </div>
+          </div>
+          
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">System Currency</label>
+            <select 
+              className="mt-1 w-full h-10 rounded-md border border-border bg-background px-3 text-sm"
+              value={localSettings.currency}
+              onChange={(e) => setLocalSettings(s => ({ ...s, currency: e.target.value }))}
+            >
+              {CURRENCIES.map(currency => (
+                <option key={currency.code} value={currency.code}>
+                  {currency.symbol} - {currency.name} ({currency.code})
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs text-muted-foreground">
+              This currency will be used throughout the system for all monetary displays
+            </p>
+          </div>
+        </div>
+
+        {/* Categories Management */}
+        <div className="pos-card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-purple-500/10">
+              <Tags className="w-5 h-5 text-purple-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Product Categories</h3>
+              <p className="text-sm text-muted-foreground">Manage your product categories</p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            {/* Add Category */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter new category name"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+              />
+              <Button variant="pos-primary" onClick={handleAddCategory}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add
+              </Button>
+            </div>
+
+            {/* Categories List */}
+            <div className="flex flex-wrap gap-2">
+              {categories.filter(c => c.name !== 'All Items').map(cat => (
+                <div 
+                  key={cat.id} 
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 group"
+                >
+                  <div 
+                    className="w-3 h-3 rounded-full"
+                    style={{ 
+                      backgroundColor: cat.color === 'blue' ? 'hsl(199, 89%, 48%)' :
+                        cat.color === 'green' ? 'hsl(142, 71%, 45%)' :
+                        cat.color === 'orange' ? 'hsl(38, 92%, 50%)' :
+                        cat.color === 'purple' ? 'hsl(262, 83%, 58%)' :
+                        cat.color === 'pink' ? 'hsl(330, 81%, 60%)' :
+                        cat.color === 'cyan' ? 'hsl(188, 78%, 45%)' :
+                        cat.color === 'red' ? 'hsl(0, 72%, 51%)' :
+                        cat.color === 'yellow' ? 'hsl(48, 96%, 53%)' :
+                        'hsl(199, 89%, 48%)'
+                    }}
+                  />
+                  <span className="text-sm text-foreground">{cat.name}</span>
+                  <button
+                    onClick={() => handleDeleteCategory(cat.id)}
+                    className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/20 transition-all"
+                  >
+                    <X className="w-3 h-3 text-destructive" />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>

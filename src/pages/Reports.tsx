@@ -1,16 +1,18 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   BarChart3, 
   TrendingUp, 
   DollarSign, 
   ShoppingBag,
-  Calendar,
   Download,
   PieChart
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { usePOS } from '@/contexts/POSContext';
+import { useCurrency } from '@/hooks/useCurrency';
+import { DateRangePicker, DateRange } from '@/components/shared/DateRangePicker';
+import { toast } from 'sonner';
 import { 
   AreaChart, 
   Area, 
@@ -31,22 +33,35 @@ const COLORS = ['hsl(199, 89%, 48%)', 'hsl(142, 71%, 45%)', 'hsl(262, 83%, 58%)'
 
 export const Reports = () => {
   const { transactions, products } = usePOS();
+  const { formatPrice, symbol } = useCurrency();
+  
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: new Date(new Date().setDate(new Date().getDate() - 7)),
+    to: new Date(),
+  });
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(tx => {
+      const txDate = new Date(tx.timestamp);
+      return txDate >= dateRange.from && txDate <= dateRange.to;
+    });
+  }, [transactions, dateRange]);
 
   const stats = useMemo(() => {
-    const totalRevenue = transactions.reduce((sum, tx) => sum + tx.total, 0);
-    const totalTransactions = transactions.length;
+    const totalRevenue = filteredTransactions.reduce((sum, tx) => sum + tx.total, 0);
+    const totalTransactions = filteredTransactions.length;
     const averageOrder = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-    const totalItems = transactions.reduce((sum, tx) => 
+    const totalItems = filteredTransactions.reduce((sum, tx) => 
       sum + tx.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0
     );
 
     return { totalRevenue, totalTransactions, averageOrder, totalItems };
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const dailySalesData = useMemo(() => {
     const salesByDay: Record<string, number> = {};
-    transactions.forEach(tx => {
-      const day = tx.timestamp.toLocaleDateString('en-US', { weekday: 'short' });
+    filteredTransactions.forEach(tx => {
+      const day = new Date(tx.timestamp).toLocaleDateString('en-US', { weekday: 'short' });
       salesByDay[day] = (salesByDay[day] || 0) + tx.total;
     });
     
@@ -54,11 +69,11 @@ export const Reports = () => {
       day,
       sales: salesByDay[day] || 0,
     }));
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const paymentMethodData = useMemo(() => {
     const methods: Record<string, number> = { cash: 0, card: 0, mobile: 0 };
-    transactions.forEach(tx => {
+    filteredTransactions.forEach(tx => {
       methods[tx.paymentMethod] += tx.total;
     });
     
@@ -67,11 +82,11 @@ export const Reports = () => {
       { name: 'Card', value: methods.card },
       { name: 'Mobile', value: methods.mobile },
     ].filter(m => m.value > 0);
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const categoryData = useMemo(() => {
     const categories: Record<string, number> = {};
-    transactions.forEach(tx => {
+    filteredTransactions.forEach(tx => {
       tx.items.forEach(item => {
         categories[item.product.category] = (categories[item.product.category] || 0) + (item.product.price * item.quantity);
       });
@@ -81,11 +96,11 @@ export const Reports = () => {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const topProducts = useMemo(() => {
     const productSales: Record<string, { name: string; quantity: number; revenue: number }> = {};
-    transactions.forEach(tx => {
+    filteredTransactions.forEach(tx => {
       tx.items.forEach(item => {
         if (!productSales[item.product.id]) {
           productSales[item.product.id] = { name: item.product.name, quantity: 0, revenue: 0 };
@@ -98,23 +113,47 @@ export const Reports = () => {
     return Object.values(productSales)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
-  }, [transactions]);
+  }, [filteredTransactions]);
+
+  const handleExportReport = () => {
+    const reportData = {
+      dateRange: {
+        from: dateRange.from.toISOString(),
+        to: dateRange.to.toISOString(),
+      },
+      summary: stats,
+      dailySales: dailySalesData,
+      paymentMethods: paymentMethodData,
+      categoryBreakdown: categoryData,
+      topProducts,
+      generatedAt: new Date().toISOString(),
+    };
+
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sales-report-${dateRange.from.toISOString().split('T')[0]}-to-${dateRange.to.toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Report exported successfully!');
+  };
 
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Sales Reports</h1>
             <p className="text-muted-foreground">Analyze your business performance</p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline">
-              <Calendar className="w-5 h-5 mr-2" />
-              Date Range
-            </Button>
-            <Button variant="pos-primary">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+            />
+            <Button variant="pos-primary" onClick={handleExportReport}>
               <Download className="w-5 h-5 mr-2" />
               Export Report
             </Button>
@@ -130,7 +169,7 @@ export const Reports = () => {
               </div>
               <span className="text-sm text-muted-foreground">Total Revenue</span>
             </div>
-            <p className="text-2xl font-bold font-mono-numbers text-foreground">${stats.totalRevenue.toFixed(2)}</p>
+            <p className="text-2xl font-bold font-mono-numbers text-foreground">{formatPrice(stats.totalRevenue)}</p>
           </div>
           <div className="pos-card">
             <div className="flex items-center gap-3 mb-2">
@@ -148,7 +187,7 @@ export const Reports = () => {
               </div>
               <span className="text-sm text-muted-foreground">Avg. Order</span>
             </div>
-            <p className="text-2xl font-bold font-mono-numbers text-foreground">${stats.averageOrder.toFixed(2)}</p>
+            <p className="text-2xl font-bold font-mono-numbers text-foreground">{formatPrice(stats.averageOrder)}</p>
           </div>
           <div className="pos-card">
             <div className="flex items-center gap-3 mb-2">
@@ -178,7 +217,7 @@ export const Reports = () => {
                       border: '1px solid hsl(220, 16%, 16%)',
                       borderRadius: '8px'
                     }}
-                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Sales']}
+                    formatter={(value: number) => [`${symbol}${value.toFixed(2)}`, 'Sales']}
                   />
                   <Bar dataKey="sales" fill="hsl(199, 89%, 48%)" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -190,34 +229,40 @@ export const Reports = () => {
           <div className="pos-card">
             <h3 className="text-lg font-semibold text-foreground mb-4">Payment Methods</h3>
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsPie>
-                  <Pie
-                    data={paymentMethodData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
-                  >
-                    {paymentMethodData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(220, 18%, 10%)', 
-                      border: '1px solid hsl(220, 16%, 16%)',
-                      borderRadius: '8px'
-                    }}
-                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
-                  />
-                  <Legend />
-                </RechartsPie>
-              </ResponsiveContainer>
+              {paymentMethodData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsPie>
+                    <Pie
+                      data={paymentMethodData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {paymentMethodData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(220, 18%, 10%)', 
+                        border: '1px solid hsl(220, 16%, 16%)',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: number) => [`${symbol}${value.toFixed(2)}`, 'Revenue']}
+                    />
+                    <Legend />
+                  </RechartsPie>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p>No data for selected period</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -228,32 +273,38 @@ export const Reports = () => {
           <div className="pos-card">
             <h3 className="text-lg font-semibold text-foreground mb-4">Sales by Category</h3>
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={categoryData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 16%)" />
-                  <XAxis type="number" stroke="hsl(215, 16%, 55%)" fontSize={12} />
-                  <YAxis 
-                    dataKey="name" 
-                    type="category" 
-                    stroke="hsl(215, 16%, 55%)" 
-                    fontSize={12}
-                    width={100}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(220, 18%, 10%)', 
-                      border: '1px solid hsl(220, 16%, 16%)',
-                      borderRadius: '8px'
-                    }}
-                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
-                  />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                    {categoryData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              {categoryData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={categoryData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 16%, 16%)" />
+                    <XAxis type="number" stroke="hsl(215, 16%, 55%)" fontSize={12} />
+                    <YAxis 
+                      dataKey="name" 
+                      type="category" 
+                      stroke="hsl(215, 16%, 55%)" 
+                      fontSize={12}
+                      width={100}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(220, 18%, 10%)', 
+                        border: '1px solid hsl(220, 16%, 16%)',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: number) => [`${symbol}${value.toFixed(2)}`, 'Revenue']}
+                    />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                      {categoryData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p>No data for selected period</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -274,7 +325,7 @@ export const Reports = () => {
                     <p className="text-sm text-muted-foreground">{product.quantity} sold</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono-numbers font-bold text-primary">${product.revenue.toFixed(2)}</p>
+                    <p className="font-mono-numbers font-bold text-primary">{formatPrice(product.revenue)}</p>
                   </div>
                 </div>
               ))}
@@ -282,7 +333,7 @@ export const Reports = () => {
               {topProducts.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <PieChart className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>No sales data available</p>
+                  <p>No sales data for selected period</p>
                 </div>
               )}
             </div>

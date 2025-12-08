@@ -1,70 +1,116 @@
 import { useState, useMemo } from 'react';
 import { 
   Search, 
-  Calendar,
   Receipt,
   Eye,
   Printer,
-  Filter,
   Download
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePOS } from '@/contexts/POSContext';
+import { useCurrency } from '@/hooks/useCurrency';
 import { cn } from '@/lib/utils';
 import { Transaction } from '@/types/pos';
 import { ReceiptModal } from '@/components/pos/ReceiptModal';
+import { DateRangePicker, DateRange } from '@/components/shared/DateRangePicker';
+import { toast } from 'sonner';
 
 export const Transactions = () => {
   const { transactions } = usePOS();
+  const { formatPrice } = useCurrency();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: new Date(new Date().setDate(new Date().getDate() - 30)),
+    to: new Date(),
+  });
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(tx => {
       const matchesSearch = tx.receiptNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            tx.cashier.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesPayment = paymentFilter === 'all' || tx.paymentMethod === paymentFilter;
-      return matchesSearch && matchesPayment;
+      
+      const txDate = new Date(tx.timestamp);
+      const matchesDate = txDate >= dateRange.from && txDate <= dateRange.to;
+      
+      return matchesSearch && matchesPayment && matchesDate;
     });
-  }, [transactions, searchQuery, paymentFilter]);
+  }, [transactions, searchQuery, paymentFilter, dateRange]);
 
   const stats = useMemo(() => ({
-    total: transactions.reduce((sum, tx) => sum + tx.total, 0),
-    count: transactions.length,
-    cash: transactions.filter(tx => tx.paymentMethod === 'cash').reduce((sum, tx) => sum + tx.total, 0),
-    card: transactions.filter(tx => tx.paymentMethod === 'card').reduce((sum, tx) => sum + tx.total, 0),
-    mobile: transactions.filter(tx => tx.paymentMethod === 'mobile').reduce((sum, tx) => sum + tx.total, 0),
-  }), [transactions]);
+    total: filteredTransactions.reduce((sum, tx) => sum + tx.total, 0),
+    count: filteredTransactions.length,
+    cash: filteredTransactions.filter(tx => tx.paymentMethod === 'cash').reduce((sum, tx) => sum + tx.total, 0),
+    card: filteredTransactions.filter(tx => tx.paymentMethod === 'card').reduce((sum, tx) => sum + tx.total, 0),
+    mobile: filteredTransactions.filter(tx => tx.paymentMethod === 'mobile').reduce((sum, tx) => sum + tx.total, 0),
+  }), [filteredTransactions]);
 
   const handleViewReceipt = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setShowReceipt(true);
   };
 
+  const handleExport = () => {
+    const exportData = filteredTransactions.map(tx => ({
+      receiptNumber: tx.receiptNumber,
+      date: new Date(tx.timestamp).toLocaleDateString(),
+      time: new Date(tx.timestamp).toLocaleTimeString(),
+      cashier: tx.cashier,
+      items: tx.items.map(item => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price: item.product.price,
+        total: item.product.price * item.quantity,
+      })),
+      subtotal: tx.subtotal,
+      tax: tx.tax,
+      discount: tx.discount,
+      total: tx.total,
+      paymentMethod: tx.paymentMethod,
+    }));
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transactions-${dateRange.from.toISOString().split('T')[0]}-to-${dateRange.to.toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Transactions exported successfully!');
+  };
+
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Transaction History</h1>
             <p className="text-muted-foreground">View and manage all transactions</p>
           </div>
-          <Button variant="outline">
-            <Download className="w-5 h-5 mr-2" />
-            Export
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+            />
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="w-5 h-5 mr-2" />
+              Export
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="pos-card col-span-2 md:col-span-1">
             <p className="text-sm text-muted-foreground mb-1">Total Revenue</p>
-            <p className="text-2xl font-bold font-mono-numbers text-primary">${stats.total.toFixed(2)}</p>
+            <p className="text-2xl font-bold font-mono-numbers text-primary">{formatPrice(stats.total)}</p>
           </div>
           <div className="pos-card">
             <p className="text-sm text-muted-foreground mb-1">Transactions</p>
@@ -72,15 +118,15 @@ export const Transactions = () => {
           </div>
           <div className="pos-card">
             <p className="text-sm text-muted-foreground mb-1">Cash</p>
-            <p className="text-xl font-bold font-mono-numbers text-success">${stats.cash.toFixed(2)}</p>
+            <p className="text-xl font-bold font-mono-numbers text-success">{formatPrice(stats.cash)}</p>
           </div>
           <div className="pos-card">
             <p className="text-sm text-muted-foreground mb-1">Card</p>
-            <p className="text-xl font-bold font-mono-numbers text-primary">${stats.card.toFixed(2)}</p>
+            <p className="text-xl font-bold font-mono-numbers text-primary">{formatPrice(stats.card)}</p>
           </div>
           <div className="pos-card">
             <p className="text-sm text-muted-foreground mb-1">Mobile</p>
-            <p className="text-xl font-bold font-mono-numbers text-purple-400">${stats.mobile.toFixed(2)}</p>
+            <p className="text-xl font-bold font-mono-numbers text-purple-400">{formatPrice(stats.mobile)}</p>
           </div>
         </div>
 
@@ -141,8 +187,8 @@ export const Transactions = () => {
                     </td>
                     <td className="py-4 px-4">
                       <div>
-                        <p className="text-foreground">{tx.timestamp.toLocaleDateString()}</p>
-                        <p className="text-sm text-muted-foreground">{tx.timestamp.toLocaleTimeString()}</p>
+                        <p className="text-foreground">{new Date(tx.timestamp).toLocaleDateString()}</p>
+                        <p className="text-sm text-muted-foreground">{new Date(tx.timestamp).toLocaleTimeString()}</p>
                       </div>
                     </td>
                     <td className="py-4 px-4 text-foreground">{tx.cashier}</td>
@@ -164,7 +210,7 @@ export const Transactions = () => {
                       </span>
                     </td>
                     <td className="py-4 px-4 text-right font-mono-numbers font-bold text-foreground">
-                      ${tx.total.toFixed(2)}
+                      {formatPrice(tx.total)}
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center justify-end gap-2">
@@ -194,7 +240,7 @@ export const Transactions = () => {
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Receipt className="w-12 h-12 mb-3 opacity-50" />
               <p className="text-lg font-medium">No transactions found</p>
-              <p className="text-sm">Try adjusting your search or filters</p>
+              <p className="text-sm">Try adjusting your search, filters, or date range</p>
             </div>
           )}
         </div>

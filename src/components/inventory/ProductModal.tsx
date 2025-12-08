@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { X, Package, Save } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Package, Save, Image, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Product } from '@/types/pos';
-import { categories } from '@/data/mockData';
+import { Product, Category } from '@/types/pos';
 import { useCurrency } from '@/hooks/useCurrency';
+import { getStoredCategories } from '@/lib/storage';
 
 interface ProductModalProps {
   open: boolean;
@@ -26,6 +26,9 @@ const generateBarcode = () => {
 
 export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductModalProps) => {
   const { symbol } = useCurrency();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
     price: 0,
@@ -36,25 +39,58 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
     barcode: '',
     description: '',
     unit: 'pcs',
+    image: '',
   });
+
+  useEffect(() => {
+    const storedCategories = getStoredCategories();
+    setCategories(storedCategories.filter(c => c.name !== 'All Items'));
+  }, [open]);
 
   useEffect(() => {
     if (product) {
       setFormData(product);
     } else {
+      const defaultCategory = categories.length > 0 ? categories[0].name : 'Beverages';
       setFormData({
         name: '',
         price: 0,
         costPrice: 0,
-        category: 'Beverages',
-        sku: generateSKU('Beverages'),
+        category: defaultCategory,
+        sku: generateSKU(defaultCategory),
         stock: 0,
         barcode: generateBarcode(),
         description: '',
         unit: 'pcs',
+        image: '',
       });
     }
-  }, [product, open]);
+  }, [product, open, categories]);
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image size must be less than 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      setFormData({ ...formData, image: base64 });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, image: '' });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +110,7 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
       barcode: formData.barcode || generateBarcode(),
       description: formData.description || '',
       unit: formData.unit || 'pcs',
+      image: formData.image || '',
     };
 
     onSave(newProduct);
@@ -107,6 +144,50 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+          {/* Image Upload */}
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">Product Image</label>
+            <div className="mt-2">
+              {formData.image ? (
+                <div className="relative w-full h-40 rounded-lg overflow-hidden bg-secondary">
+                  <img 
+                    src={formData.image} 
+                    alt="Product" 
+                    className="w-full h-full object-cover"
+                  />
+                  {!isViewMode && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isViewMode}
+                  className="w-full h-40 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Upload className="w-8 h-8" />
+                  <span className="text-sm">Click to upload image</span>
+                  <span className="text-xs">Max 2MB, JPG/PNG</span>
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={isViewMode}
+              />
+            </div>
+          </div>
+
           <div>
             <label className="text-sm font-medium text-muted-foreground">Product Name *</label>
             <Input
@@ -156,7 +237,7 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
                 className="mt-1 w-full h-10 rounded-md border border-border bg-background px-3 text-sm"
                 disabled={isViewMode}
               >
-                {categories.filter(c => c.name !== 'All Items').map(cat => (
+                {categories.map(cat => (
                   <option key={cat.id} value={cat.name}>{cat.name}</option>
                 ))}
               </select>

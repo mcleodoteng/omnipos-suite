@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   SETTINGS: 'swiftpos_settings',
   CURRENT_USER: 'swiftpos_current_user',
   CASH_DRAWER: 'swiftpos_cash_drawer',
+  CATEGORIES: 'swiftpos_categories',
 };
 
 // Products
@@ -224,9 +225,34 @@ export const importAllData = (jsonString: string): boolean => {
     if (data.users) saveUsers(data.users);
     if (data.settings) saveSettings(data.settings);
     if (data.cashDrawer) saveCashDrawer(data.cashDrawer);
+    if (data.categories) saveCategories(data.categories);
     return true;
   } catch (e) {
     console.error('Error importing data:', e);
     return false;
+  }
+};
+
+// Categories
+import { Category } from '@/types/pos';
+import { categories as defaultCategories } from '@/data/mockData';
+
+export const getStoredCategories = (): Category[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Error loading categories from storage:', e);
+  }
+  return defaultCategories;
+};
+
+export const saveCategories = (categories: Category[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
+  } catch (e) {
+    console.error('Error saving categories to storage:', e);
   }
 };

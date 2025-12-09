@@ -100,9 +100,9 @@ export const StockReport = () => {
             <h1 className="text-2xl font-bold text-foreground">Stock Report</h1>
             <p className="text-muted-foreground">Track all stock adjustments and inventory changes</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <DateRangePicker value={dateRange} onChange={handleDateRangeChange} />
-            <Button variant="outline" onClick={handleExport}>
+            <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
               <Download className="w-4 h-4 mr-2" />
               Export
             </Button>

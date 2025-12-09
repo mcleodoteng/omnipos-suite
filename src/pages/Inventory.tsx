@@ -76,12 +76,12 @@ export const Inventory = () => {
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Inventory Management</h1>
             <p className="text-muted-foreground">Manage your products and stock levels</p>
           </div>
-          <Button variant="pos-primary" onClick={handleAddProduct}>
+          <Button variant="pos-primary" onClick={handleAddProduct} className="w-full sm:w-auto">
             <Plus className="w-5 h-5 mr-2" />
             Add Product
           </Button>

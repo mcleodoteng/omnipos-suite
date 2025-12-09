@@ -71,7 +71,7 @@ export const Login = () => {
               <User className="w-4 h-4" />
               Select User
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {users.map(user => <button key={user.id} onClick={() => setSelectedUser(user.id)} className={`p-3 rounded-xl border transition-all duration-200 ${selectedUser === user.id ? 'border-primary bg-primary/10 text-foreground' : 'border-border bg-card hover:border-primary/50 text-muted-foreground hover:text-foreground'}`}>
                   <div className="w-10 h-10 rounded-full bg-secondary mx-auto mb-2 flex items-center justify-center">
                     <span className="text-sm font-semibold">{user.name.charAt(0)}</span>

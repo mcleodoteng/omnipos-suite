@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   CURRENT_USER: 'swiftpos_current_user',
   CASH_DRAWER: 'swiftpos_cash_drawer',
   CATEGORIES: 'swiftpos_categories',
+  STOCK_ADJUSTMENTS: 'swiftpos_stock_adjustments',
 };
 
 // Products
@@ -199,12 +200,15 @@ export const clearAllData = (): void => {
 
 // Export data for backup
 export const exportAllData = (): string => {
+  const stockAdjustmentsRaw = localStorage.getItem(STORAGE_KEYS.STOCK_ADJUSTMENTS);
   const data = {
     products: getStoredProducts(),
     transactions: getStoredTransactions(),
     users: getStoredUsers(),
     settings: getStoredSettings(),
     cashDrawer: getStoredCashDrawer(),
+    categories: getStoredCategories(),
+    stockAdjustments: stockAdjustmentsRaw ? JSON.parse(stockAdjustmentsRaw) : [],
     exportedAt: new Date().toISOString(),
   };
   return JSON.stringify(data, null, 2);
@@ -226,6 +230,9 @@ export const importAllData = (jsonString: string): boolean => {
     if (data.settings) saveSettings(data.settings);
     if (data.cashDrawer) saveCashDrawer(data.cashDrawer);
     if (data.categories) saveCategories(data.categories);
+    if (data.stockAdjustments) {
+      localStorage.setItem(STORAGE_KEYS.STOCK_ADJUSTMENTS, JSON.stringify(data.stockAdjustments));
+    }
     return true;
   } catch (e) {
     console.error('Error importing data:', e);

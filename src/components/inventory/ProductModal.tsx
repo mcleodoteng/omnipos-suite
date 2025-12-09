@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Package, Save, Image, Upload } from 'lucide-react';
+import { X, Package, Save, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Product, Category } from '@/types/pos';
 import { useCurrency } from '@/hooks/useCurrency';
 import { getStoredCategories } from '@/lib/storage';
+import { addStockAdjustment } from '@/lib/stockAdjustments';
+import { usePOS } from '@/contexts/POSContext';
 
 interface ProductModalProps {
   open: boolean;
@@ -26,8 +28,10 @@ const generateBarcode = () => {
 
 export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductModalProps) => {
   const { symbol } = useCurrency();
+  const { currentUser } = usePOS();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>();
+  const [originalStock, setOriginalStock] = useState(0);
   
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '',
@@ -50,8 +54,9 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
   useEffect(() => {
     if (product) {
       setFormData(product);
+      setOriginalStock(product.stock);
     } else {
-      const defaultCategory = categories.length > 0 ? categories[0].name : 'Beverages';
+      const defaultCategory = categories && categories.length > 0 ? categories[0].name : 'Beverages';
       setFormData({
         name: '',
         price: 0,
@@ -64,6 +69,7 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
         unit: 'pcs',
         image: '',
       });
+      setOriginalStock(0);
     }
   }, [product, open, categories]);
 
@@ -99,6 +105,7 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
       return;
     }
 
+    const newStock = formData.stock || 0;
     const newProduct: Product = {
       id: product?.id || Date.now().toString(),
       name: formData.name || '',
@@ -106,12 +113,38 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
       costPrice: formData.costPrice || 0,
       category: formData.category || 'Beverages',
       sku: formData.sku || generateSKU(formData.category || 'Beverages'),
-      stock: formData.stock || 0,
+      stock: newStock,
       barcode: formData.barcode || generateBarcode(),
       description: formData.description || '',
       unit: formData.unit || 'pcs',
       image: formData.image || '',
     };
+
+    // Track stock adjustment if stock changed
+    if (mode === 'edit' && newStock !== originalStock) {
+      const adjustment = newStock - originalStock;
+      addStockAdjustment({
+        productId: newProduct.id,
+        productName: newProduct.name,
+        previousStock: originalStock,
+        newStock: newStock,
+        adjustment: adjustment,
+        reason: adjustment > 0 ? 'Stock added via inventory edit' : 'Stock removed via inventory edit',
+        adjustedBy: currentUser?.name || 'Unknown',
+        type: adjustment > 0 ? 'add' : 'remove',
+      });
+    } else if (mode === 'add' && newStock > 0) {
+      addStockAdjustment({
+        productId: newProduct.id,
+        productName: newProduct.name,
+        previousStock: 0,
+        newStock: newStock,
+        adjustment: newStock,
+        reason: 'Initial stock on product creation',
+        adjustedBy: currentUser?.name || 'Unknown',
+        type: 'add',
+      });
+    }
 
     onSave(newProduct);
     onClose();

@@ -11,6 +11,7 @@ import {
   saveSettings,
   POSSettings
 } from '@/lib/storage';
+import { addStockAdjustment } from '@/lib/stockAdjustments';
 
 interface POSContextType {
   currentUser: User | null;
@@ -124,12 +125,28 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newTransactions = [transaction, ...transactions];
     setTransactions(newTransactions);
     
-    // Update stock
+    // Update stock and track adjustments
     transaction.items.forEach(item => {
+      const currentProduct = products.find(p => p.id === item.product.id);
+      const previousStock = currentProduct?.stock || item.quantity;
+      const newStock = Math.max(0, previousStock - item.quantity);
+      
+      // Track stock adjustment for sale
+      addStockAdjustment({
+        productId: item.product.id,
+        productName: item.product.name,
+        previousStock,
+        newStock,
+        adjustment: -item.quantity,
+        reason: `Sale - Receipt #${transaction.receiptNumber}`,
+        adjustedBy: transaction.cashier,
+        type: 'sale',
+      });
+
       setProducts(prevProducts =>
         prevProducts.map(p =>
           p.id === item.product.id
-            ? { ...p, stock: Math.max(0, p.stock - item.quantity) }
+            ? { ...p, stock: newStock }
             : p
         )
       );

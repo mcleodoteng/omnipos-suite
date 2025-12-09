@@ -11,8 +11,8 @@ interface DashboardDetailModalProps {
   onClose: () => void;
   type: ModalType;
   transactions: Transaction[];
-  lowStockProducts: Product[];
-  dateRange: { from: Date; to: Date };
+  products: Product[];
+  lowStockThreshold: number;
 }
 
 export const DashboardDetailModal = ({ 
@@ -20,12 +20,14 @@ export const DashboardDetailModal = ({
   onClose, 
   type, 
   transactions, 
-  lowStockProducts,
-  dateRange 
+  products,
+  lowStockThreshold 
 }: DashboardDetailModalProps) => {
   const { formatPrice } = useCurrency();
 
   if (!open) return null;
+
+  const lowStockProducts = products.filter(p => p.stock <= lowStockThreshold);
 
   const getTitle = () => {
     switch (type) {
@@ -47,10 +49,8 @@ export const DashboardDetailModal = ({
 
   const Icon = getIcon();
 
-  const filteredTransactions = transactions.filter(tx => {
-    const txDate = new Date(tx.timestamp);
-    return txDate >= dateRange.from && txDate <= dateRange.to;
-  });
+  // Use all transactions passed (already filtered by parent)
+  const filteredTransactions = transactions;
 
   const renderContent = () => {
     switch (type) {

@@ -58,6 +58,19 @@ export interface DashboardStats {
   hourlyData: { hour: string; sales: number }[];
 }
 
+export interface StockAdjustment {
+  id: string;
+  productId: string;
+  productName: string;
+  previousStock: number;
+  newStock: number;
+  adjustment: number;
+  reason: string;
+  adjustedBy: string;
+  adjustedAt: Date;
+  type: 'add' | 'remove' | 'set' | 'sale';
+}
+
 export interface CashDrawer {
   id: string;
   openedAt: Date;

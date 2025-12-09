@@ -126,7 +126,7 @@ export const ProductGrid = () => {
       {/* Products Area */}
       <div className="flex-1 overflow-y-auto p-4">
         {viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
             {filteredProducts.map(product => {
               const isTopSeller = topProducts.includes(product.id);
               return (

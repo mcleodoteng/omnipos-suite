@@ -46,7 +46,7 @@ const StatCard = ({
       </div>
     </div>
     <p className="text-muted-foreground text-sm mb-1">{title}</p>
-    <p className="text-2xl font-bold font-mono-numbers text-foreground">{value}</p>
+    <p className="text-xl md:text-2xl font-bold font-mono-numbers text-foreground">{value}</p>
   </div>
 );
 

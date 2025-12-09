@@ -16,12 +16,20 @@ const navItems = [
   { icon: Settings, label: 'Settings', path: '/settings', permission: 'settings' as Permission },
 ];
 
-export const Sidebar = () => {
+interface SidebarProps {
+  mobile?: boolean;
+  onNavigate?: () => void;
+}
+
+export const Sidebar = ({ mobile, onNavigate }: SidebarProps) => {
   const location = useLocation();
   const { currentUser, setCurrentUser, isOffline } = usePOS();
   const userRole = currentUser?.role || 'cashier';
 
-  const handleLogout = () => { setCurrentUser(null); };
+  const handleLogout = () => { 
+    setCurrentUser(null); 
+    onNavigate?.();
+  };
 
   const filteredNavItems = navItems.filter(item => {
     if (item.permission === 'transactions' && userRole === 'cashier') {
@@ -30,16 +38,34 @@ export const Sidebar = () => {
     return hasPermission(userRole, item.permission);
   });
 
-  return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border flex flex-col z-50">
-      <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shadow-lg shadow-primary/30"><ShoppingCart className="w-5 h-5 text-primary-foreground" /></div>
-          <div><h1 className="font-bold text-lg text-foreground">SwiftPOS</h1><p className="text-xs text-muted-foreground">Point of Sale</p></div>
-        </div>
-      </div>
+  const handleNavClick = () => {
+    onNavigate?.();
+  };
 
-      <div className={cn('mx-3 mt-3 px-3 py-2 rounded-lg flex items-center gap-2 text-xs font-medium', isOffline ? 'bg-warning/10 text-warning border border-warning/20' : 'bg-success/10 text-success border border-success/20')}>
+  return (
+    <aside className={cn(
+      "h-screen bg-sidebar border-r border-sidebar-border flex flex-col",
+      mobile ? "w-full" : "fixed left-0 top-0 w-64 z-50"
+    )}>
+      {!mobile && (
+        <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shadow-lg shadow-primary/30">
+              <ShoppingCart className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="font-bold text-lg text-foreground">SwiftPOS</h1>
+              <p className="text-xs text-muted-foreground">Point of Sale</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={cn(
+        'mx-3 px-3 py-2 rounded-lg flex items-center gap-2 text-xs font-medium',
+        mobile ? 'mt-4' : 'mt-3',
+        isOffline ? 'bg-warning/10 text-warning border border-warning/20' : 'bg-success/10 text-success border border-success/20'
+      )}>
         {isOffline ? (<><WifiOff className="w-4 h-4" />Offline Mode</>) : (<><Wifi className="w-4 h-4" />Online</>)}
       </div>
 
@@ -47,7 +73,17 @@ export const Sidebar = () => {
         {filteredNavItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
-            <Link key={item.path} to={item.path} className={cn('flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200', isActive ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground')}>
+            <Link 
+              key={item.path} 
+              to={item.path} 
+              onClick={handleNavClick}
+              className={cn(
+                'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200', 
+                isActive 
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' 
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+              )}
+            >
               <item.icon className="w-5 h-5" />{item.label}
             </Link>
           );
@@ -56,10 +92,17 @@ export const Sidebar = () => {
 
       <div className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center"><span className="text-sm font-semibold text-secondary-foreground">{currentUser?.name.charAt(0) || 'U'}</span></div>
-          <div className="flex-1 min-w-0"><p className="text-sm font-medium text-foreground truncate">{currentUser?.name || 'Guest'}</p><p className="text-xs text-muted-foreground capitalize">{currentUser?.role || 'Not logged in'}</p></div>
+          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+            <span className="text-sm font-semibold text-secondary-foreground">{currentUser?.name.charAt(0) || 'U'}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">{currentUser?.name || 'Guest'}</p>
+            <p className="text-xs text-muted-foreground capitalize">{currentUser?.role || 'Not logged in'}</p>
+          </div>
         </div>
-        <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground hover:text-destructive" onClick={handleLogout}><LogOut className="w-4 h-4 mr-2" />Logout</Button>
+        <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground hover:text-destructive" onClick={handleLogout}>
+          <LogOut className="w-4 h-4 mr-2" />Logout
+        </Button>
       </div>
     </aside>
   );

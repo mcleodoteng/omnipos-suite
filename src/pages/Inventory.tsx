@@ -125,7 +125,7 @@ export const Inventory = () => {
               <tbody>
                 {filteredProducts.map(product => (
                   <tr key={product.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
-                    <td className="py-4 px-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center"><Package className="w-5 h-5 text-muted-foreground" /></div><span className="font-medium text-foreground">{product.name}</span></div></td>
+                    <td className="py-4 px-4"><div className="flex items-center gap-3">{product.image ? <img src={product.image} alt={product.name} className="w-10 h-10 rounded-lg object-cover" /> : <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center"><Package className="w-5 h-5 text-muted-foreground" /></div>}<span className="font-medium text-foreground">{product.name}</span></div></td>
                     <td className="py-4 px-4 text-muted-foreground font-mono text-sm">{product.sku}</td>
                     <td className="py-4 px-4"><span className="px-2 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium">{product.category}</span></td>
                     <td className="py-4 px-4 text-right font-mono-numbers font-semibold text-foreground">{formatPrice(product.price)}</td>

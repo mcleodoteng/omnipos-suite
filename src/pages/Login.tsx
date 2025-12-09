@@ -112,7 +112,7 @@ export const Login = () => {
 
           {/* Demo hint */}
           <p className="text-xs text-center text-muted-foreground">
-            ​
+            ​See System Administrator for an Account     
           </p>
         </div>
       </div>

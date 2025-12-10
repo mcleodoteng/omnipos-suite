@@ -45,7 +45,7 @@ export const Sidebar = ({ mobile, onNavigate }: SidebarProps) => {
   return (
     <aside className={cn(
       "h-screen bg-sidebar border-r border-sidebar-border flex flex-col",
-      mobile ? "w-full" : "fixed left-0 top-0 w-64 z-50"
+      mobile ? "w-full pt-[env(safe-area-inset-top)]" : "fixed left-0 top-0 w-64 z-50"
     )}>
       {!mobile && (
         <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
@@ -90,7 +90,7 @@ export const Sidebar = ({ mobile, onNavigate }: SidebarProps) => {
         })}
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-sidebar-border">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
             <span className="text-sm font-semibold text-secondary-foreground">{currentUser?.name.charAt(0) || 'U'}</span>

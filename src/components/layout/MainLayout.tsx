@@ -19,7 +19,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
       </div>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-sidebar border-b border-sidebar-border flex items-center px-4 z-40">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-[calc(3.5rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] bg-sidebar border-b border-sidebar-border flex items-center px-4 z-40">
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="mr-3">
@@ -39,7 +39,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
       </div>
 
       {/* Main Content */}
-      <main className="lg:ml-64 min-h-screen pt-14 lg:pt-0">
+      <main className="lg:ml-64 min-h-screen pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pt-0 pb-[env(safe-area-inset-bottom)]">
         {children}
       </main>
     </div>

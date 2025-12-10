@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, DollarSign, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { CashDrawer } from '@/types/pos';
 import { useCurrency } from '@/hooks/useCurrency';
 import { cn } from '@/lib/utils';
@@ -16,29 +16,29 @@ interface CashDrawerModalProps {
 
 export const CashDrawerModal = ({ open, onClose, drawer, onOpen, onClose_drawer }: CashDrawerModalProps) => {
   const { formatPrice, symbol } = useCurrency();
-  const [openingBalance, setOpeningBalance] = useState('');
-  const [actualCash, setActualCash] = useState('');
+  const [openingBalance, setOpeningBalance] = useState<number>(0);
+  const [actualCash, setActualCash] = useState<number>(0);
   const [notes, setNotes] = useState('');
 
   if (!open) return null;
 
   const handleOpenDrawer = () => {
-    const balance = parseFloat(openingBalance) || 0;
+    const balance = openingBalance || 0;
     onOpen(balance);
-    setOpeningBalance('');
+    setOpeningBalance(0);
     onClose();
   };
 
   const handleCloseDrawer = () => {
-    const cash = parseFloat(actualCash) || 0;
+    const cash = actualCash || 0;
     onClose_drawer(cash, notes);
-    setActualCash('');
+    setActualCash(0);
     setNotes('');
     onClose();
   };
 
   const isDrawerOpen = drawer?.status === 'open';
-  const difference = drawer ? (parseFloat(actualCash) || 0) - drawer.expectedCash : 0;
+  const difference = drawer ? (actualCash || 0) - drawer.expectedCash : 0;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -72,12 +72,11 @@ export const CashDrawerModal = ({ open, onClose, drawer, onOpen, onClose_drawer 
               
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Opening Balance ({symbol})</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                <NumberInput
+                  min={0}
+                  allowDecimals={true}
                   value={openingBalance}
-                  onChange={(e) => setOpeningBalance(e.target.value)}
+                  onChange={(value) => setOpeningBalance(value)}
                   placeholder="Enter starting cash amount"
                   className="mt-1"
                 />
@@ -127,18 +126,17 @@ export const CashDrawerModal = ({ open, onClose, drawer, onOpen, onClose_drawer 
 
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Actual Cash Count ({symbol})</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                <NumberInput
+                  min={0}
+                  allowDecimals={true}
                   value={actualCash}
-                  onChange={(e) => setActualCash(e.target.value)}
+                  onChange={(value) => setActualCash(value)}
                   placeholder="Count the cash in drawer"
                   className="mt-1"
                 />
               </div>
 
-              {actualCash && (
+              {actualCash > 0 && (
                 <div className={cn(
                   "p-3 rounded-lg",
                   difference === 0 ? "bg-success/10" : difference > 0 ? "bg-primary/10" : "bg-destructive/10"

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Package, Save, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Product, Category } from '@/types/pos';
 import { useCurrency } from '@/hooks/useCurrency';
 import { getStoredCategories } from '@/lib/storage';
@@ -236,12 +237,11 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Selling Price ({symbol}) *</label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+              <NumberInput
+                min={0}
+                allowDecimals={true}
+                value={formData.price || 0}
+                onChange={(value) => setFormData({ ...formData, price: value })}
                 className="mt-1"
                 required
                 disabled={isViewMode}
@@ -249,12 +249,11 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Cost Price ({symbol})</label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.costPrice}
-                onChange={(e) => setFormData({ ...formData, costPrice: parseFloat(e.target.value) || 0 })}
+              <NumberInput
+                min={0}
+                allowDecimals={true}
+                value={formData.costPrice || 0}
+                onChange={(value) => setFormData({ ...formData, costPrice: value })}
                 className="mt-1"
                 disabled={isViewMode}
               />
@@ -306,11 +305,11 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Stock Quantity *</label>
-              <Input
-                type="number"
-                min="0"
-                value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
+              <NumberInput
+                min={0}
+                allowDecimals={false}
+                value={formData.stock || 0}
+                onChange={(value) => setFormData({ ...formData, stock: Math.floor(value) })}
                 className="mt-1"
                 required
                 disabled={isViewMode}

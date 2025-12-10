@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, Wallet, CreditCard, Smartphone, Check, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { usePOS } from '@/contexts/POSContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -18,13 +18,13 @@ type PaymentMethod = 'cash' | 'card' | 'mobile';
 export const PaymentModal = ({ open, onClose }: PaymentModalProps) => {
   const { cart, cartTotal, cartSubtotal, cartTax, clearCart, addTransaction, currentUser } = usePOS();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
-  const [cashReceived, setCashReceived] = useState('');
+  const [cashReceived, setCashReceived] = useState<number>(0);
   const [processing, setProcessing] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
 
-  const cashAmount = parseFloat(cashReceived) || 0;
+  const cashAmount = cashReceived || 0;
   const change = cashAmount - cartTotal;
 
   const handlePayment = async () => {
@@ -66,7 +66,7 @@ export const PaymentModal = ({ open, onClose }: PaymentModalProps) => {
     }
     setCompleted(false);
     setProcessing(false);
-    setCashReceived('');
+    setCashReceived(0);
     setPaymentMethod('cash');
     setLastTransaction(null);
     onClose();
@@ -198,12 +198,13 @@ export const PaymentModal = ({ open, onClose }: PaymentModalProps) => {
                   <label className="text-sm font-medium text-muted-foreground">
                     Cash Received
                   </label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     value={cashReceived}
-                    onChange={(e) => setCashReceived(e.target.value)}
+                    onChange={(value) => setCashReceived(value)}
                     placeholder="0.00"
                     className="h-14 text-2xl font-mono-numbers text-center"
+                    allowDecimals={true}
+                    min={0}
                   />
                   
                   {/* Quick Amount Buttons */}
@@ -211,7 +212,7 @@ export const PaymentModal = ({ open, onClose }: PaymentModalProps) => {
                     {quickAmounts.map(amount => (
                       <button
                         key={amount}
-                        onClick={() => setCashReceived(amount.toString())}
+                        onClick={() => setCashReceived(amount)}
                         className="py-2 rounded-lg bg-secondary text-secondary-foreground font-medium hover:bg-secondary/80 transition-colors"
                       >
                         ${amount}
@@ -219,7 +220,7 @@ export const PaymentModal = ({ open, onClose }: PaymentModalProps) => {
                     ))}
                   </div>
                   <button
-                    onClick={() => setCashReceived(Math.ceil(cartTotal).toString())}
+                    onClick={() => setCashReceived(Math.ceil(cartTotal))}
                     className="w-full py-2 rounded-lg bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors"
                   >
                     Exact Amount (${Math.ceil(cartTotal)})

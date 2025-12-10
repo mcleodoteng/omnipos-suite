@@ -18,6 +18,8 @@ import { getStockAdjustments } from '@/lib/stockAdjustments';
 import { useCurrency } from '@/hooks/useCurrency';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { downloadExcel, ExcelExportConfigs } from '@/lib/excelExport';
+import { toast } from 'sonner';
 
 export const StockReport = () => {
   const { formatPrice } = useCurrency();
@@ -48,27 +50,21 @@ export const StockReport = () => {
   }, [adjustments]);
 
   const handleExport = () => {
-    const csv = [
-      ['Date', 'Product', 'Type', 'Previous Stock', 'Adjustment', 'New Stock', 'Reason', 'Adjusted By'].join(','),
-      ...adjustments.map(adj => [
-        format(new Date(adj.adjustedAt), 'yyyy-MM-dd HH:mm'),
-        `"${adj.productName}"`,
-        adj.type,
-        adj.previousStock,
-        adj.adjustment > 0 ? `+${adj.adjustment}` : adj.adjustment,
-        adj.newStock,
-        `"${adj.reason}"`,
-        adj.adjustedBy
-      ].join(','))
-    ].join('\n');
+    const exportData = adjustments.map(adj => ({
+      date: format(new Date(adj.adjustedAt), 'yyyy-MM-dd'),
+      time: format(new Date(adj.adjustedAt), 'hh:mm a'),
+      productName: adj.productName,
+      type: adj.type.charAt(0).toUpperCase() + adj.type.slice(1),
+      previousStock: adj.previousStock,
+      adjustment: adj.adjustment > 0 ? `+${adj.adjustment}` : adj.adjustment.toString(),
+      newStock: adj.newStock,
+      reason: adj.reason,
+      adjustedBy: adj.adjustedBy,
+    }));
 
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `stock-report-${format(dateRange.from, 'yyyy-MM-dd')}-to-${format(dateRange.to, 'yyyy-MM-dd')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const filename = `stock-report-${format(dateRange.from, 'yyyy-MM-dd')}-to-${format(dateRange.to, 'yyyy-MM-dd')}`;
+    downloadExcel(exportData, ExcelExportConfigs.stockAdjustments, filename);
+    toast.success('Stock report exported to Excel successfully!');
   };
 
   const getTypeIcon = (type: string) => {

@@ -19,6 +19,7 @@ import {
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Switch } from '@/components/ui/switch';
 import { usePOS } from '@/contexts/POSContext';
 import { exportAllData, importAllData, clearAllData, getStoredCategories, saveCategories } from '@/lib/storage';
@@ -489,10 +490,11 @@ export const Settings = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Tax Rate (%)</label>
-              <Input 
-                type="number" 
+              <NumberInput 
+                min={0}
+                allowDecimals={true}
                 value={localSettings.taxRate} 
-                onChange={(e) => setLocalSettings(s => ({ ...s, taxRate: parseFloat(e.target.value) || 0 }))}
+                onChange={(value) => setLocalSettings(s => ({ ...s, taxRate: value }))}
                 className="mt-1" 
               />
             </div>

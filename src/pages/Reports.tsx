@@ -13,6 +13,7 @@ import { usePOS } from '@/contexts/POSContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { DateRangePicker, DateRange } from '@/components/shared/DateRangePicker';
 import { toast } from 'sonner';
+import { downloadExcel, ExcelExportConfigs } from '@/lib/excelExport';
 import { 
   AreaChart, 
   Area, 
@@ -116,27 +117,33 @@ export const Reports = () => {
   }, [filteredTransactions]);
 
   const handleExportReport = () => {
-    const reportData = {
-      dateRange: {
-        from: dateRange.from.toISOString(),
-        to: dateRange.to.toISOString(),
-      },
-      summary: stats,
-      dailySales: dailySalesData,
-      paymentMethods: paymentMethodData,
-      categoryBreakdown: categoryData,
-      topProducts,
-      generatedAt: new Date().toISOString(),
-    };
+    // Prepare comprehensive report data for Excel
+    const summaryData = [
+      { metric: 'Report Period', value: `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}` },
+      { metric: 'Total Revenue', value: stats.totalRevenue.toFixed(2) },
+      { metric: 'Total Transactions', value: stats.totalTransactions.toString() },
+      { metric: 'Average Order Value', value: stats.averageOrder.toFixed(2) },
+      { metric: 'Total Items Sold', value: stats.totalItems.toString() },
+      { metric: '', value: '' },
+      { metric: '--- Daily Sales ---', value: '' },
+      ...dailySalesData.map(d => ({ metric: d.day, value: d.sales.toFixed(2) })),
+      { metric: '', value: '' },
+      { metric: '--- Payment Methods ---', value: '' },
+      ...paymentMethodData.map(p => ({ metric: p.name, value: p.value.toFixed(2) })),
+      { metric: '', value: '' },
+      { metric: '--- Category Breakdown ---', value: '' },
+      ...categoryData.map(c => ({ metric: c.name, value: c.value.toFixed(2) })),
+      { metric: '', value: '' },
+      { metric: '--- Top Products ---', value: '' },
+      ...topProducts.map((p, i) => ({ 
+        metric: `${i + 1}. ${p.name} (${p.quantity} sold)`, 
+        value: p.revenue.toFixed(2) 
+      })),
+    ];
 
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `sales-report-${dateRange.from.toISOString().split('T')[0]}-to-${dateRange.to.toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Report exported successfully!');
+    const filename = `sales-report-${dateRange.from.toISOString().split('T')[0]}-to-${dateRange.to.toISOString().split('T')[0]}`;
+    downloadExcel(summaryData, ExcelExportConfigs.salesReport, filename);
+    toast.success('Report exported to Excel successfully!');
   };
 
   return (

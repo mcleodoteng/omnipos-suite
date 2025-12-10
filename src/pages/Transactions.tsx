@@ -16,6 +16,7 @@ import { Transaction } from '@/types/pos';
 import { ReceiptModal } from '@/components/pos/ReceiptModal';
 import { DateRangePicker, DateRange } from '@/components/shared/DateRangePicker';
 import { toast } from 'sonner';
+import { downloadExcel, ExcelExportConfigs } from '@/lib/excelExport';
 
 export const Transactions = () => {
   const { transactions } = usePOS();
@@ -62,27 +63,17 @@ export const Transactions = () => {
       date: new Date(tx.timestamp).toLocaleDateString(),
       time: new Date(tx.timestamp).toLocaleTimeString(),
       cashier: tx.cashier,
-      items: tx.items.map(item => ({
-        name: item.product.name,
-        quantity: item.quantity,
-        price: item.product.price,
-        total: item.product.price * item.quantity,
-      })),
-      subtotal: tx.subtotal,
-      tax: tx.tax,
-      discount: tx.discount,
-      total: tx.total,
+      itemCount: tx.items.reduce((sum, item) => sum + item.quantity, 0),
+      subtotal: tx.subtotal.toFixed(2),
+      tax: tx.tax.toFixed(2),
+      discount: tx.discount.toFixed(2),
+      total: tx.total.toFixed(2),
       paymentMethod: tx.paymentMethod,
     }));
 
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `transactions-${dateRange.from.toISOString().split('T')[0]}-to-${dateRange.to.toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Transactions exported successfully!');
+    const filename = `transactions-${dateRange.from.toISOString().split('T')[0]}-to-${dateRange.to.toISOString().split('T')[0]}`;
+    downloadExcel(exportData, ExcelExportConfigs.transactions, filename);
+    toast.success('Transactions exported to Excel successfully!');
   };
 
   return (

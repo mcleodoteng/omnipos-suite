@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { DatabaseProvider, useDatabase } from "@/contexts/DatabaseContext";
 import { POSProvider, usePOS } from "@/contexts/POSContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -14,8 +15,46 @@ import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import StockReport from "./pages/StockReport";
 import NotFound from "./pages/NotFound";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
+
+// Database loading screen
+const DatabaseLoader = ({ children }: { children: React.ReactNode }) => {
+  const { isLoading, error, isReady } = useDatabase();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="text-muted-foreground">Initializing database...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-4">
+        <div className="text-destructive text-center">
+          <h2 className="text-xl font-bold mb-2">Database Error</h2>
+          <p className="text-muted-foreground">{error}</p>
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!isReady) {
+    return null;
+  }
+
+  return <>{children}</>;
+};
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser } = usePOS();
@@ -46,15 +85,19 @@ const AppRoutes = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <POSProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
-    </POSProvider>
+    <DatabaseProvider>
+      <DatabaseLoader>
+        <POSProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </TooltipProvider>
+        </POSProvider>
+      </DatabaseLoader>
+    </DatabaseProvider>
   </QueryClientProvider>
 );
 

@@ -1,17 +1,19 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Product, CartItem, Transaction, User } from '@/types/pos';
+import { useDatabase } from './DatabaseContext';
 import { 
-  getStoredProducts, 
-  saveProducts, 
-  getStoredTransactions, 
-  saveTransactions,
-  getStoredCurrentUser,
-  saveCurrentUser,
-  getStoredSettings,
-  saveSettings,
+  getAllProducts, 
+  saveAllProducts,
+  getAllTransactions,
+  createTransaction as dbCreateTransaction,
+  getCurrentUser,
+  setCurrentUser as dbSetCurrentUser,
+  getSettings,
+  updateSettings as dbUpdateSettings,
+  createStockAdjustment,
+  updateProductStock,
   POSSettings
-} from '@/lib/storage';
-import { addStockAdjustment } from '@/lib/stockAdjustments';
+} from '@/lib/database';
 
 interface POSContextType {
   currentUser: User | null;
@@ -31,17 +33,67 @@ interface POSContextType {
   settings: POSSettings;
   updateSettings: (newSettings: Partial<POSSettings>) => void;
   isOffline: boolean;
+  refreshData: () => Promise<void>;
 }
+
+const defaultSettings: POSSettings = {
+  storeName: 'SwiftPOS Store',
+  storeAddress: '123 Main Street, City, State 12345',
+  storePhone: '(555) 123-4567',
+  taxRate: 10,
+  taxName: 'Sales Tax',
+  receiptWidth: '80',
+  showLogo: true,
+  autoPrint: false,
+  showTaxBreakdown: true,
+  lowStockAlerts: true,
+  dailySummary: true,
+  soundEffects: false,
+  currency: 'GHS',
+  lowStockThreshold: 20,
+};
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
 
 export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUserState] = useState<User | null>(() => getStoredCurrentUser());
-  const [products, setProductsState] = useState<Product[]>(() => getStoredProducts());
+  const { isReady } = useDatabase();
+  const [currentUser, setCurrentUserState] = useState<User | null>(null);
+  const [products, setProductsState] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [transactions, setTransactionsState] = useState<Transaction[]>(() => getStoredTransactions());
-  const [settings, setSettingsState] = useState<POSSettings>(() => getStoredSettings());
+  const [transactions, setTransactionsState] = useState<Transaction[]>([]);
+  const [settings, setSettingsState] = useState<POSSettings>(defaultSettings);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  // Load data from SQLite when database is ready
+  useEffect(() => {
+    if (!isReady) return;
+
+    const loadData = async () => {
+      try {
+        const [loadedProducts, loadedTransactions, loadedUser, loadedSettings] = await Promise.all([
+          getAllProducts(),
+          getAllTransactions(),
+          getCurrentUser(),
+          getSettings(),
+        ]);
+        
+        setProductsState(loadedProducts);
+        setTransactionsState(loadedTransactions);
+        setCurrentUserState(loadedUser);
+        setSettingsState(loadedSettings);
+        
+        console.log('Data loaded from SQLite:', {
+          products: loadedProducts.length,
+          transactions: loadedTransactions.length,
+          user: loadedUser?.name,
+        });
+      } catch (error) {
+        console.error('Error loading data from SQLite:', error);
+      }
+    };
+
+    loadData();
+  }, [isReady]);
 
   // Track online/offline status
   useEffect(() => {
@@ -57,37 +109,52 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // Persist current user
-  const setCurrentUser = (user: User | null) => {
-    setCurrentUserState(user);
-    saveCurrentUser(user);
-  };
+  // Refresh data from database
+  const refreshData = useCallback(async () => {
+    if (!isReady) return;
+    
+    const [loadedProducts, loadedTransactions, loadedSettings] = await Promise.all([
+      getAllProducts(),
+      getAllTransactions(),
+      getSettings(),
+    ]);
+    
+    setProductsState(loadedProducts);
+    setTransactionsState(loadedTransactions);
+    setSettingsState(loadedSettings);
+  }, [isReady]);
 
-  // Persist products
-  const setProducts: React.Dispatch<React.SetStateAction<Product[]>> = (action) => {
+  // Set current user
+  const setCurrentUser = useCallback(async (user: User | null) => {
+    setCurrentUserState(user);
+    if (isReady) {
+      await dbSetCurrentUser(user);
+    }
+  }, [isReady]);
+
+  // Set products with persistence
+  const setProducts: React.Dispatch<React.SetStateAction<Product[]>> = useCallback((action) => {
     setProductsState(prev => {
       const newProducts = typeof action === 'function' ? action(prev) : action;
-      saveProducts(newProducts);
+      if (isReady) {
+        saveAllProducts(newProducts).catch(console.error);
+      }
       return newProducts;
     });
-  };
-
-  // Persist transactions
-  const setTransactions = (newTransactions: Transaction[]) => {
-    setTransactionsState(newTransactions);
-    saveTransactions(newTransactions);
-  };
+  }, [isReady]);
 
   // Update settings
-  const updateSettings = (newSettings: Partial<POSSettings>) => {
+  const updateSettings = useCallback(async (newSettings: Partial<POSSettings>) => {
     setSettingsState(prev => {
       const updated = { ...prev, ...newSettings };
-      saveSettings(updated);
+      if (isReady) {
+        dbUpdateSettings(newSettings).catch(console.error);
+      }
       return updated;
     });
-  };
+  }, [isReady]);
 
-  const addToCart = (product: Product) => {
+  const addToCart = useCallback((product: Product) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.product.id === product.id);
       if (existingItem) {
@@ -99,13 +166,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return [...prevCart, { product, quantity: 1 }];
     });
-  };
+  }, []);
 
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = useCallback((productId: string) => {
     setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
-  };
+  }, []);
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = useCallback((productId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId);
       return;
@@ -115,43 +182,47 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         item.product.id === productId ? { ...item, quantity } : item
       )
     );
-  };
+  }, [removeFromCart]);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCart([]);
-  };
+  }, []);
 
-  const addTransaction = (transaction: Transaction) => {
-    const newTransactions = [transaction, ...transactions];
-    setTransactions(newTransactions);
+  const addTransaction = useCallback(async (transaction: Transaction) => {
+    // Add to local state immediately
+    setTransactionsState(prev => [transaction, ...prev]);
     
-    // Update stock and track adjustments
-    transaction.items.forEach(item => {
-      const currentProduct = products.find(p => p.id === item.product.id);
-      const previousStock = currentProduct?.stock || item.quantity;
-      const newStock = Math.max(0, previousStock - item.quantity);
+    if (isReady) {
+      // Save to SQLite
+      await dbCreateTransaction(transaction);
       
-      // Track stock adjustment for sale
-      addStockAdjustment({
-        productId: item.product.id,
-        productName: item.product.name,
-        previousStock,
-        newStock,
-        adjustment: -item.quantity,
-        reason: `Sale - Receipt #${transaction.receiptNumber}`,
-        adjustedBy: transaction.cashier,
-        type: 'sale',
-      });
+      // Update stock and track adjustments
+      for (const item of transaction.items) {
+        const currentProduct = products.find(p => p.id === item.product.id);
+        const previousStock = currentProduct?.stock || item.quantity;
+        const newStock = Math.max(0, previousStock - item.quantity);
+        
+        // Track stock adjustment for sale
+        await createStockAdjustment({
+          productId: item.product.id,
+          productName: item.product.name,
+          previousStock,
+          newStock,
+          adjustment: -item.quantity,
+          reason: `Sale - Receipt #${transaction.receiptNumber}`,
+          adjustedBy: transaction.cashier,
+          type: 'sale',
+        });
 
-      setProducts(prevProducts =>
-        prevProducts.map(p =>
-          p.id === item.product.id
-            ? { ...p, stock: newStock }
-            : p
-        )
-      );
-    });
-  };
+        // Update product stock in database
+        await updateProductStock(item.product.id, newStock);
+      }
+      
+      // Refresh products to get updated stock
+      const updatedProducts = await getAllProducts();
+      setProductsState(updatedProducts);
+    }
+  }, [isReady, products]);
 
   const taxRate = settings.taxRate / 100;
   const cartSubtotal = cart.reduce(
@@ -181,6 +252,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         settings,
         updateSettings,
         isOffline,
+        refreshData,
       }}
     >
       {children}

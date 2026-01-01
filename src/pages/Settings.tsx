@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
   Store, 
   Printer, 
@@ -17,7 +17,9 @@ import {
   X,
   RefreshCw,
   Calendar,
-  Table2
+  Table2,
+  Clock,
+  Key
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -30,6 +32,9 @@ import { useDatabaseStats } from '@/hooks/useDatabaseStats';
 import { getStoredCategories, saveCategories } from '@/lib/storage';
 import { toast } from 'sonner';
 import { CURRENCIES, Category } from '@/types/pos';
+import { AutoBackupSettings } from '@/components/settings/AutoBackupSettings';
+import { UserPasswordSettings } from '@/components/settings/UserPasswordSettings';
+import { useAutoBackup } from '@/hooks/useAutoBackup';
 
 export const Settings = () => {
   const { settings, updateSettings, products, transactions } = usePOS();
@@ -43,6 +48,11 @@ export const Settings = () => {
   const [newCategory, setNewCategory] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+
+  // Auto-backup scheduler
+  const { restartScheduler } = useAutoBackup(() => {
+    refetchStats();
+  });
 
   const handleSave = () => {
     updateSettings(localSettings);
@@ -281,6 +291,36 @@ export const Settings = () => {
               and reload the application. Make sure to export a backup before importing.
             </p>
           </div>
+        </div>
+
+        {/* Auto-Backup Scheduling */}
+        <div className="pos-card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-cyan-500/10">
+              <Clock className="w-5 h-5 text-cyan-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Auto-Backup Scheduling</h3>
+              <p className="text-sm text-muted-foreground">Automatic periodic backups stored locally</p>
+            </div>
+          </div>
+          
+          <AutoBackupSettings onSettingsChange={restartScheduler} />
+        </div>
+
+        {/* User PIN Settings */}
+        <div className="pos-card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-orange-500/10">
+              <Key className="w-5 h-5 text-orange-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Change Your PIN</h3>
+              <p className="text-sm text-muted-foreground">Update your login credentials</p>
+            </div>
+          </div>
+          
+          <UserPasswordSettings />
         </div>
 
         {/* Currency Settings */}

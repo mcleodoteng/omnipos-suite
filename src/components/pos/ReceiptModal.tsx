@@ -57,9 +57,9 @@ export const ReceiptModal = ({ open, onClose, transaction }: ReceiptModalProps) 
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-sm animate-scale-in shadow-2xl">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-sm animate-scale-in shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
           <h2 className="text-lg font-bold text-foreground">Receipt Preview</h2>
           <button
             onClick={onClose}
@@ -69,8 +69,8 @@ export const ReceiptModal = ({ open, onClose, transaction }: ReceiptModalProps) 
           </button>
         </div>
 
-        {/* Receipt Content */}
-        <div className="p-4">
+        {/* Receipt Content - Scrollable */}
+        <div className="p-4 overflow-y-auto flex-1 min-h-0">
           <div 
             ref={receiptRef}
             className="bg-white text-black p-4 rounded-lg font-mono text-sm"
@@ -172,8 +172,8 @@ export const ReceiptModal = ({ open, onClose, transaction }: ReceiptModalProps) 
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 p-4 border-t border-border">
+        {/* Actions - Fixed at bottom */}
+        <div className="flex gap-3 p-4 border-t border-border flex-shrink-0">
           <Button variant="outline" className="flex-1" onClick={onClose}>
             Close
           </Button>

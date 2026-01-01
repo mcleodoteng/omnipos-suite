@@ -14,7 +14,10 @@ import {
   Coins,
   Tags,
   Plus,
-  X
+  X,
+  RefreshCw,
+  Calendar,
+  Table2
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -22,17 +25,24 @@ import { Input } from '@/components/ui/input';
 import { NumberInput } from '@/components/ui/number-input';
 import { Switch } from '@/components/ui/switch';
 import { usePOS } from '@/contexts/POSContext';
-import { exportAllData, importAllData, clearAllData, getStoredCategories, saveCategories } from '@/lib/storage';
+import { useDatabase } from '@/contexts/DatabaseContext';
+import { useDatabaseStats } from '@/hooks/useDatabaseStats';
+import { getStoredCategories, saveCategories } from '@/lib/storage';
 import { toast } from 'sonner';
 import { CURRENCIES, Category } from '@/types/pos';
 
 export const Settings = () => {
   const { settings, updateSettings, products, transactions } = usePOS();
+  const { exportData, importData, resetDatabase } = useDatabase();
+  const { stats, isLoading: statsLoading, refetchStats, updateLastBackupDate } = useDatabaseStats();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dbFileInputRef = useRef<HTMLInputElement>(null);
   
   const [localSettings, setLocalSettings] = useState(settings);
   const [categories, setCategories] = useState<Category[]>(() => getStoredCategories());
   const [newCategory, setNewCategory] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleSave = () => {
     updateSettings(localSettings);
@@ -40,40 +50,49 @@ export const Settings = () => {
     toast.success('Settings saved successfully!');
   };
 
-  const handleExport = () => {
-    const data = exportAllData();
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `swiftpos-backup-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Data exported successfully!');
+  const handleExportDatabase = async () => {
+    try {
+      setIsExporting(true);
+      await exportData();
+      updateLastBackupDate();
+      toast.success('Database exported successfully!');
+    } catch (err) {
+      toast.error('Failed to export database');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportDatabase = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      if (importAllData(content)) {
-        toast.success('Data imported successfully! Please refresh the page.');
-        setTimeout(() => window.location.reload(), 1500);
+    try {
+      setIsImporting(true);
+      const success = await importData(file);
+      if (success) {
+        toast.success('Database imported successfully! Refreshing...');
       } else {
-        toast.error('Failed to import data. Invalid file format.');
+        toast.error('Failed to import database. Invalid file format.');
       }
-    };
-    reader.readAsText(file);
+    } catch (err) {
+      toast.error('Failed to import database');
+    } finally {
+      setIsImporting(false);
+      if (dbFileInputRef.current) {
+        dbFileInputRef.current.value = '';
+      }
+    }
   };
 
-  const handleClearData = () => {
-    if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-      clearAllData();
-      toast.success('All data cleared. Refreshing...');
-      setTimeout(() => window.location.reload(), 1000);
+  const handleResetDatabase = async () => {
+    if (confirm('Are you sure you want to reset the database? This will delete all data and cannot be undone.')) {
+      try {
+        await resetDatabase();
+        toast.success('Database reset. Refreshing...');
+      } catch (err) {
+        toast.error('Failed to reset database');
+      }
     }
   };
 
@@ -110,14 +129,9 @@ export const Settings = () => {
     toast.success('Category deleted');
   };
 
-  const storageUsed = () => {
-    let total = 0;
-    for (let key in localStorage) {
-      if (key.startsWith('swiftpos_')) {
-        total += localStorage.getItem(key)?.length || 0;
-      }
-    }
-    return (total / 1024).toFixed(2);
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return 'Never';
+    return new Date(dateStr).toLocaleString();
   };
 
   return (
@@ -129,18 +143,25 @@ export const Settings = () => {
           <p className="text-muted-foreground">Configure your POS system</p>
         </div>
 
-        {/* Local Storage Info */}
+        {/* Database Statistics */}
         <div className="pos-card bg-primary/5 border-primary/20">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <HardDrive className="w-5 h-5 text-primary" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <HardDrive className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">SQLite Database</h3>
+                <p className="text-sm text-muted-foreground">Local browser database with IndexedDB persistence</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground">Local Storage Mode</h3>
-              <p className="text-sm text-muted-foreground">All data is stored locally on this device</p>
-            </div>
+            <Button variant="ghost" size="sm" onClick={refetchStats} disabled={statsLoading}>
+              <RefreshCw className={`w-4 h-4 ${statsLoading ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+
+          {/* Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
             <div className="p-3 rounded-lg bg-card">
               <p className="text-muted-foreground">Products</p>
               <p className="text-lg font-bold font-mono-numbers text-foreground">{products.length}</p>
@@ -150,13 +171,115 @@ export const Settings = () => {
               <p className="text-lg font-bold font-mono-numbers text-foreground">{transactions.length}</p>
             </div>
             <div className="p-3 rounded-lg bg-card">
-              <p className="text-muted-foreground">Storage Used</p>
-              <p className="text-lg font-bold font-mono-numbers text-foreground">{storageUsed()} KB</p>
+              <p className="text-muted-foreground">Total Records</p>
+              <p className="text-lg font-bold font-mono-numbers text-foreground">{stats?.totalRecords ?? '-'}</p>
             </div>
             <div className="p-3 rounded-lg bg-card">
-              <p className="text-muted-foreground">Status</p>
-              <p className="text-lg font-bold text-success">Active</p>
+              <p className="text-muted-foreground">Est. Size</p>
+              <p className="text-lg font-bold font-mono-numbers text-foreground">
+                {stats ? `${stats.totalSizeKB.toFixed(1)} KB` : '-'}
+              </p>
             </div>
+          </div>
+
+          {/* Table Details */}
+          <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <div className="flex items-center gap-2 p-3 border-b border-border bg-secondary/30">
+              <Table2 className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Table Statistics</span>
+            </div>
+            <div className="divide-y divide-border max-h-48 overflow-y-auto">
+              {stats?.tables.map((table) => (
+                <div key={table.name} className="flex items-center justify-between px-4 py-2 text-sm">
+                  <span className="font-mono text-foreground">{table.name}</span>
+                  <div className="flex gap-4">
+                    <span className="text-muted-foreground">{table.recordCount} records</span>
+                    <span className="text-muted-foreground w-16 text-right">{table.sizeEstimate}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Last Backup */}
+          <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="w-4 h-4" />
+            <span>Last backup: {formatDate(stats?.lastBackupDate ?? null)}</span>
+          </div>
+        </div>
+
+        {/* Database Backup & Restore */}
+        <div className="pos-card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-warning/10">
+              <Database className="w-5 h-5 text-warning" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Database Backup & Restore</h3>
+              <p className="text-sm text-muted-foreground">Export, import, or reset your SQLite database</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button 
+              variant="outline" 
+              className="h-auto py-4" 
+              onClick={handleExportDatabase}
+              disabled={isExporting}
+            >
+              <div className="text-center">
+                {isExporting ? (
+                  <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
+                ) : (
+                  <Download className="w-6 h-6 mx-auto mb-2" />
+                )}
+                <p className="font-medium">Export Database</p>
+                <p className="text-xs text-muted-foreground">Download SQLite .db file</p>
+              </div>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="h-auto py-4" 
+              onClick={() => dbFileInputRef.current?.click()}
+              disabled={isImporting}
+            >
+              <div className="text-center">
+                {isImporting ? (
+                  <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
+                ) : (
+                  <Upload className="w-6 h-6 mx-auto mb-2" />
+                )}
+                <p className="font-medium">Import Database</p>
+                <p className="text-xs text-muted-foreground">Restore from .db file</p>
+              </div>
+            </Button>
+            <input
+              ref={dbFileInputRef}
+              type="file"
+              accept=".db"
+              onChange={handleImportDatabase}
+              className="hidden"
+            />
+            
+            <Button 
+              variant="outline" 
+              className="h-auto py-4 border-destructive/30 hover:bg-destructive/10 hover:text-destructive" 
+              onClick={handleResetDatabase}
+            >
+              <div className="text-center">
+                <Trash2 className="w-6 h-6 mx-auto mb-2" />
+                <p className="font-medium">Reset Database</p>
+                <p className="text-xs text-muted-foreground">Delete all data</p>
+              </div>
+            </Button>
+          </div>
+          
+          <div className="mt-4 p-3 rounded-lg bg-secondary/50 text-sm">
+            <p className="text-muted-foreground">
+              <strong className="text-foreground">Note:</strong> Importing a database will replace all current data 
+              and reload the application. Make sure to export a backup before importing.
+            </p>
           </div>
         </div>
 
@@ -249,60 +372,6 @@ export const Settings = () => {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Data Management */}
-        <div className="pos-card">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 rounded-lg bg-warning/10">
-              <Database className="w-5 h-5 text-warning" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground">Data Management</h3>
-              <p className="text-sm text-muted-foreground">Backup, restore, or clear your data</p>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-auto py-4" onClick={handleExport}>
-              <div className="text-center">
-                <Download className="w-6 h-6 mx-auto mb-2" />
-                <p className="font-medium">Export Backup</p>
-                <p className="text-xs text-muted-foreground">Download all data as JSON</p>
-              </div>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="h-auto py-4" 
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <div className="text-center">
-                <Upload className="w-6 h-6 mx-auto mb-2" />
-                <p className="font-medium">Import Backup</p>
-                <p className="text-xs text-muted-foreground">Restore from JSON file</p>
-              </div>
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleImport}
-              className="hidden"
-            />
-            
-            <Button 
-              variant="outline" 
-              className="h-auto py-4 border-destructive/30 hover:bg-destructive/10 hover:text-destructive" 
-              onClick={handleClearData}
-            >
-              <div className="text-center">
-                <Trash2 className="w-6 h-6 mx-auto mb-2" />
-                <p className="font-medium">Clear All Data</p>
-                <p className="text-xs text-muted-foreground">Reset to default state</p>
-              </div>
-            </Button>
           </div>
         </div>
 

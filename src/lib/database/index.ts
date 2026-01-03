@@ -9,6 +9,8 @@ export * from './repositories/categoryRepository';
 export * from './repositories/settingsRepository';
 export * from './repositories/stockAdjustmentRepository';
 export * from './repositories/cashDrawerRepository';
+export * from './repositories/loginHistoryRepository';
 
 // Types
 export type { POSSettings } from './repositories/settingsRepository';
+export type { LoginRecord } from './repositories/loginHistoryRepository';

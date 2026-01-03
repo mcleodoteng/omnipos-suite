@@ -1,9 +1,10 @@
 import { User } from '@/types/pos';
 import { getDatabase, persistDatabase } from '../init';
+import { recordLogin } from './loginHistoryRepository';
 
 export async function getAllUsers(): Promise<User[]> {
   const db = await getDatabase();
-  const results = db.exec('SELECT id, name, role, pin, email, phone, created_at, last_login FROM users ORDER BY name');
+  const results = db.exec('SELECT id, name, role, pin, email, phone, avatar_key, created_at, last_login FROM users ORDER BY name');
   
   if (!results.length) return [];
   
@@ -14,8 +15,9 @@ export async function getAllUsers(): Promise<User[]> {
     pin: row[3],
     email: row[4] || undefined,
     phone: row[5] || undefined,
-    createdAt: row[6] ? new Date(row[6]) : undefined,
-    lastLogin: row[7] ? new Date(row[7]) : undefined,
+    avatarKey: row[6] || undefined,
+    createdAt: row[7] ? new Date(row[7]) : undefined,
+    lastLogin: row[8] ? new Date(row[8]) : undefined,
   }));
 }
 
@@ -68,10 +70,10 @@ export async function getUserByPin(pin: string): Promise<User | null> {
 export async function createUser(user: User): Promise<void> {
   const db = await getDatabase();
   const stmt = db.prepare(
-    'INSERT INTO users (id, name, role, pin, email, phone) VALUES (?, ?, ?, ?, ?, ?)'
+    'INSERT INTO users (id, name, role, pin, email, phone, avatar_key) VALUES (?, ?, ?, ?, ?, ?, ?)'
   );
   
-  stmt.run([user.id, user.name, user.role, user.pin, user.email || null, user.phone || null]);
+  stmt.run([user.id, user.name, user.role, user.pin, user.email || null, user.phone || null, user.avatarKey || null]);
   stmt.free();
   await persistDatabase();
 }
@@ -79,10 +81,10 @@ export async function createUser(user: User): Promise<void> {
 export async function updateUser(user: User): Promise<void> {
   const db = await getDatabase();
   const stmt = db.prepare(
-    'UPDATE users SET name = ?, role = ?, pin = ?, email = ?, phone = ? WHERE id = ?'
+    'UPDATE users SET name = ?, role = ?, pin = ?, email = ?, phone = ?, avatar_key = ? WHERE id = ?'
   );
   
-  stmt.run([user.name, user.role, user.pin, user.email || null, user.phone || null, user.id]);
+  stmt.run([user.name, user.role, user.pin, user.email || null, user.phone || null, user.avatarKey || null, user.id]);
   stmt.free();
   await persistDatabase();
 }
@@ -93,9 +95,10 @@ export async function deleteUser(id: string): Promise<void> {
   await persistDatabase();
 }
 
-export async function updateLastLogin(id: string): Promise<void> {
+export async function updateLastLogin(id: string, userName: string): Promise<void> {
   const db = await getDatabase();
   db.run('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?', [id]);
+  await recordLogin(id, userName);
   await persistDatabase();
 }
 
@@ -107,11 +110,11 @@ export async function saveAllUsers(users: User[]): Promise<void> {
   
   // Insert all users
   const stmt = db.prepare(
-    'INSERT INTO users (id, name, role, pin, email, phone) VALUES (?, ?, ?, ?, ?, ?)'
+    'INSERT INTO users (id, name, role, pin, email, phone, avatar_key) VALUES (?, ?, ?, ?, ?, ?, ?)'
   );
   
   users.forEach(user => {
-    stmt.run([user.id, user.name, user.role, user.pin, user.email || null, user.phone || null]);
+    stmt.run([user.id, user.name, user.role, user.pin, user.email || null, user.phone || null, user.avatarKey || null]);
   });
   
   stmt.free();
@@ -134,7 +137,7 @@ export async function setCurrentUser(user: User | null): Promise<void> {
   db.run('UPDATE current_session SET user_id = ? WHERE id = 1', [user?.id || null]);
   
   if (user) {
-    await updateLastLogin(user.id);
+    await updateLastLogin(user.id, user.name);
   }
   
   await persistDatabase();

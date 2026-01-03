@@ -1,22 +1,33 @@
 import { useState, useEffect } from 'react';
-import { Users as UsersIcon, Plus, Edit2, Trash2, Shield, ShoppingCart, UserCog, Eye } from 'lucide-react';
+import { Users as UsersIcon, Plus, Edit2, Trash2, Shield, ShoppingCart, UserCog, Eye, KeyRound } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { User } from '@/types/pos';
-import { getStoredUsers, saveUsers } from '@/lib/storage';
+import { getAllUsers, createUser, updateUser, deleteUser } from '@/lib/database/repositories/userRepository';
 import { toast } from 'sonner';
 import { UserModal } from '@/components/users/UserModal';
+import { ResetPinModal } from '@/components/users/ResetPinModal';
+import { usePOS } from '@/contexts/POSContext';
 
 export const Users = () => {
+  const { currentUser } = usePOS();
   const [users, setUsers] = useState<User[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [showResetPinModal, setShowResetPinModal] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
+  const isAdmin = currentUser?.role === 'admin';
+
   useEffect(() => {
-    setUsers(getStoredUsers());
+    loadUsers();
   }, []);
+
+  const loadUsers = async () => {
+    const loadedUsers = await getAllUsers();
+    setUsers(loadedUsers);
+  };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -37,26 +48,45 @@ export const Users = () => {
   const handleAddUser = () => { setSelectedUser(null); setModalMode('add'); setShowModal(true); };
   const handleViewUser = (user: User) => { setSelectedUser(user); setModalMode('view'); setShowModal(true); };
   const handleEditUser = (user: User) => { setSelectedUser(user); setModalMode('edit'); setShowModal(true); };
+  const handleResetPin = (user: User) => { setSelectedUser(user); setShowResetPinModal(true); };
 
-  const handleSaveUser = (user: User) => {
-    let updatedUsers: User[];
-    if (modalMode === 'add') {
-      updatedUsers = [...users, user];
-      toast.success('User added successfully');
-    } else {
-      updatedUsers = users.map(u => u.id === user.id ? user : u);
-      toast.success('User updated successfully');
+  const handleSaveUser = async (user: User) => {
+    try {
+      if (modalMode === 'add') {
+        await createUser(user);
+        toast.success('User added successfully');
+      } else {
+        await updateUser(user);
+        toast.success('User updated successfully');
+      }
+      await loadUsers();
+    } catch (error) {
+      toast.error('Failed to save user');
     }
-    setUsers(updatedUsers);
-    saveUsers(updatedUsers);
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handlePinReset = async (userId: string, newPin: string) => {
+    try {
+      const user = users.find(u => u.id === userId);
+      if (user) {
+        await updateUser({ ...user, pin: newPin });
+        toast.success('PIN reset successfully');
+        await loadUsers();
+      }
+    } catch (error) {
+      toast.error('Failed to reset PIN');
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
     if (confirm('Are you sure you want to delete this user?')) {
-      const updatedUsers = users.filter(u => u.id !== userId);
-      setUsers(updatedUsers);
-      saveUsers(updatedUsers);
-      toast.success('User deleted');
+      try {
+        await deleteUser(userId);
+        toast.success('User deleted');
+        await loadUsers();
+      } catch (error) {
+        toast.error('Failed to delete user');
+      }
     }
   };
 
@@ -90,6 +120,9 @@ export const Users = () => {
                   <div className="flex gap-1">
                     <button onClick={() => handleViewUser(user)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><Eye className="w-4 h-4" /></button>
                     <button onClick={() => handleEditUser(user)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><Edit2 className="w-4 h-4" /></button>
+                    {isAdmin && user.id !== currentUser?.id && (
+                      <button onClick={() => handleResetPin(user)} className="p-2 rounded-lg hover:bg-warning/10 text-muted-foreground hover:text-warning transition-colors" title="Reset PIN"><KeyRound className="w-4 h-4" /></button>
+                    )}
                     <button onClick={() => handleDeleteUser(user.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
@@ -113,6 +146,12 @@ export const Users = () => {
       </div>
 
       <UserModal open={showModal} onClose={() => setShowModal(false)} onSave={handleSaveUser} user={selectedUser} mode={modalMode} />
+      <ResetPinModal 
+        open={showResetPinModal} 
+        onClose={() => setShowResetPinModal(false)} 
+        onReset={handlePinReset} 
+        user={selectedUser} 
+      />
     </MainLayout>
   );
 };

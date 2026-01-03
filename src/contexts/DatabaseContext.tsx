@@ -8,6 +8,7 @@ interface DatabaseContextType {
   exportData: () => Promise<void>;
   importData: (file: File) => Promise<boolean>;
   resetDatabase: () => Promise<void>;
+  reloadDatabase: () => Promise<void>;
 }
 
 const DatabaseContext = createContext<DatabaseContextType | undefined>(undefined);
@@ -56,15 +57,31 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const importData = useCallback(async (file: File): Promise<boolean> => {
     try {
+      setIsLoading(true);
       const buffer = await file.arrayBuffer();
       const data = new Uint8Array(buffer);
       await importDatabase(data);
-      // Reload the page to reinitialize with new data
-      window.location.reload();
+      setIsReady(true);
       return true;
     } catch (err) {
       console.error('Import failed:', err);
       return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const reloadDatabase = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      await getDatabase();
+      setIsReady(true);
+    } catch (err) {
+      console.error('Failed to reload database:', err);
+      setError(err instanceof Error ? err.message : 'Failed to reload database');
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -94,6 +111,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         exportData,
         importData,
         resetDatabase,
+        reloadDatabase,
       }}
     >
       {children}

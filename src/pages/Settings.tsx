@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Store, 
   Printer, 
@@ -37,8 +38,9 @@ import { UserPasswordSettings } from '@/components/settings/UserPasswordSettings
 import { useAutoBackup } from '@/hooks/useAutoBackup';
 
 export const Settings = () => {
-  const { settings, updateSettings, products, transactions } = usePOS();
-  const { exportData, importData, resetDatabase } = useDatabase();
+  const navigate = useNavigate();
+  const { settings, updateSettings, products, transactions, refreshData } = usePOS();
+  const { exportData, importData, resetDatabase, reloadDatabase } = useDatabase();
   const { stats, isLoading: statsLoading, refetchStats, updateLastBackupDate } = useDatabaseStats();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dbFileInputRef = useRef<HTMLInputElement>(null);
@@ -81,7 +83,12 @@ export const Settings = () => {
       setIsImporting(true);
       const success = await importData(file);
       if (success) {
-        toast.success('Database imported successfully! Refreshing...');
+        toast.success('Database imported successfully! Refreshing data...');
+        // Reload database and refresh POS data without page reload
+        await reloadDatabase();
+        await refreshData();
+        // Navigate to dashboard to show updated data
+        navigate('/');
       } else {
         toast.error('Failed to import database. Invalid file format.');
       }

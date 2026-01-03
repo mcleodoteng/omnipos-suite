@@ -46,6 +46,7 @@ export interface User {
   pin: string;
   email?: string;
   phone?: string;
+  avatarKey?: string;
   createdAt?: Date;
   lastLogin?: Date;
 }

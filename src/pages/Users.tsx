@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users as UsersIcon, Plus, Edit2, Trash2, Shield, ShoppingCart, UserCog, Eye, KeyRound } from 'lucide-react';
+import { Users as UsersIcon, Plus, Edit2, Trash2, Shield, ShoppingCart, UserCog, Eye, KeyRound, History } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -8,17 +8,23 @@ import { getAllUsers, createUser, updateUser, deleteUser } from '@/lib/database/
 import { toast } from 'sonner';
 import { UserModal } from '@/components/users/UserModal';
 import { ResetPinModal } from '@/components/users/ResetPinModal';
+import { LoginHistoryModal } from '@/components/users/LoginHistoryModal';
 import { usePOS } from '@/contexts/POSContext';
+import { getAvatar } from '@/lib/avatarStorage';
 
 export const Users = () => {
   const { currentUser } = usePOS();
   const [users, setUsers] = useState<User[]>([]);
+  const [userAvatars, setUserAvatars] = useState<Record<string, string>>({});
   const [showModal, setShowModal] = useState(false);
   const [showResetPinModal, setShowResetPinModal] = useState(false);
+  const [showLoginHistory, setShowLoginHistory] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const isAdmin = currentUser?.role === 'admin';
+  const isManager = currentUser?.role === 'manager';
+  const canViewHistory = isAdmin || isManager;
 
   useEffect(() => {
     loadUsers();
@@ -27,6 +33,16 @@ export const Users = () => {
   const loadUsers = async () => {
     const loadedUsers = await getAllUsers();
     setUsers(loadedUsers);
+    
+    // Load avatars for all users
+    const avatars: Record<string, string> = {};
+    for (const user of loadedUsers) {
+      if (user.avatarKey) {
+        const avatar = await getAvatar(user.avatarKey);
+        if (avatar) avatars[user.id] = avatar;
+      }
+    }
+    setUserAvatars(avatars);
   };
 
   const getRoleIcon = (role: string) => {
@@ -95,7 +111,15 @@ export const Users = () => {
       <div className="p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div><h1 className="text-2xl font-bold text-foreground">User Management</h1><p className="text-muted-foreground">Manage staff accounts and permissions</p></div>
-          <Button variant="pos-primary" onClick={handleAddUser}><Plus className="w-5 h-5 mr-2" />Add User</Button>
+          <div className="flex gap-2">
+            {canViewHistory && (
+              <Button variant="outline" onClick={() => setShowLoginHistory(true)}>
+                <History className="w-5 h-5 mr-2" />
+                Login History
+              </Button>
+            )}
+            <Button variant="pos-primary" onClick={handleAddUser}><Plus className="w-5 h-5 mr-2" />Add User</Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -111,7 +135,11 @@ export const Users = () => {
               <div key={user.id} className="pos-card pos-card-hover">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center"><span className="text-lg font-bold text-foreground">{user.name.charAt(0)}</span></div>
+                    {userAvatars[user.id] ? (
+                      <img src={userAvatars[user.id]} alt={user.name} className="w-12 h-12 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center"><span className="text-lg font-bold text-foreground">{user.name.charAt(0)}</span></div>
+                    )}
                     <div>
                       <h3 className="font-semibold text-foreground">{user.name}</h3>
                       <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize', getRoleColor(user.role))}><RoleIcon className="w-3 h-3" />{user.role}</span>
@@ -152,6 +180,7 @@ export const Users = () => {
         onReset={handlePinReset} 
         user={selectedUser} 
       />
+      <LoginHistoryModal open={showLoginHistory} onClose={() => setShowLoginHistory(false)} />
     </MainLayout>
   );
 };

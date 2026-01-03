@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { X, User, Lock, Mail, Phone, Save, Eye, EyeOff } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, User, Lock, Mail, Phone, Save, Eye, EyeOff, Camera, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePOS } from '@/contexts/POSContext';
 import { updateUser, getAllUsers } from '@/lib/database';
+import { saveAvatar, getAvatar, deleteAvatar } from '@/lib/avatarStorage';
 import { toast } from 'sonner';
 
 interface UserProfileModalProps {
@@ -15,12 +16,15 @@ interface UserProfileModalProps {
 
 export const UserProfileModal = ({ open, onClose }: UserProfileModalProps) => {
   const { currentUser, setCurrentUser } = usePOS();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
     phone: '',
   });
+  
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   
   const [pinData, setPinData] = useState({
     currentPin: '',
@@ -46,10 +50,69 @@ export const UserProfileModal = ({ open, onClose }: UserProfileModalProps) => {
       });
       setPinData({ currentPin: '', newPin: '', confirmPin: '' });
       setErrors({});
+      
+      // Load avatar
+      if (currentUser.avatarKey) {
+        getAvatar(currentUser.avatarKey).then(setAvatarUrl);
+      } else {
+        setAvatarUrl(null);
+      }
     }
   }, [currentUser, open]);
 
   if (!open || !currentUser) return null;
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const imageData = event.target?.result as string;
+      const avatarKey = `avatar-${currentUser.id}`;
+      
+      try {
+        await saveAvatar(avatarKey, imageData);
+        setAvatarUrl(imageData);
+        
+        const updatedUser = { ...currentUser, avatarKey };
+        await updateUser(updatedUser);
+        setCurrentUser(updatedUser);
+        
+        toast.success('Profile photo updated');
+      } catch (error) {
+        toast.error('Failed to save profile photo');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!currentUser.avatarKey) return;
+    
+    try {
+      await deleteAvatar(currentUser.avatarKey);
+      setAvatarUrl(null);
+      
+      const updatedUser = { ...currentUser, avatarKey: undefined };
+      await updateUser(updatedUser);
+      setCurrentUser(updatedUser);
+      
+      toast.success('Profile photo removed');
+    } catch (error) {
+      toast.error('Failed to remove profile photo');
+    }
+  };
 
   const handleUpdateProfile = async () => {
     if (!profileData.name.trim()) {
@@ -101,7 +164,6 @@ export const UserProfileModal = ({ open, onClose }: UserProfileModalProps) => {
 
     setIsUpdating(true);
     try {
-      // Check if PIN is already used by another user
       const allUsers = await getAllUsers();
       const pinExists = allUsers.some(u => u.pin === pinData.newPin && u.id !== currentUser.id);
       
@@ -111,10 +173,7 @@ export const UserProfileModal = ({ open, onClose }: UserProfileModalProps) => {
         return;
       }
 
-      const updatedUser = {
-        ...currentUser,
-        pin: pinData.newPin,
-      };
+      const updatedUser = { ...currentUser, pin: pinData.newPin };
       
       await updateUser(updatedUser);
       setCurrentUser(updatedUser);
@@ -133,8 +192,18 @@ export const UserProfileModal = ({ open, onClose }: UserProfileModalProps) => {
       <div className="bg-card border border-border rounded-2xl w-full max-w-md mx-4 shadow-2xl max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-5 h-5 text-primary" />
+            <div className="relative">
+              {avatarUrl ? (
+                <img 
+                  src={avatarUrl} 
+                  alt={currentUser.name}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="w-6 h-6 text-primary" />
+                </div>
+              )}
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground">My Profile</h2>
@@ -160,6 +229,59 @@ export const UserProfileModal = ({ open, onClose }: UserProfileModalProps) => {
 
           <div className="p-4 overflow-y-auto max-h-[calc(90vh-180px)]">
             <TabsContent value="profile" className="mt-0 space-y-4">
+              {/* Avatar Section */}
+              <div className="flex flex-col items-center gap-3 py-4">
+                <div className="relative">
+                  {avatarUrl ? (
+                    <img 
+                      src={avatarUrl} 
+                      alt={currentUser.name}
+                      className="w-24 h-24 rounded-full object-cover border-4 border-primary/20"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center border-4 border-primary/20">
+                      <span className="text-3xl font-bold text-secondary-foreground">
+                        {currentUser.name.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    Upload Photo
+                  </Button>
+                  {avatarUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemoveAvatar}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="profile-name">Full Name</Label>
                 <Input

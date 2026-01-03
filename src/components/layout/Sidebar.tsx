@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, ShoppingCart, Package, BarChart3, Settings, LogOut, Receipt, Users, Wifi, WifiOff, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -6,6 +6,7 @@ import { usePOS } from '@/contexts/POSContext';
 import { Button } from '@/components/ui/button';
 import { hasPermission, Permission } from '@/types/pos';
 import { UserProfileModal } from './UserProfileModal';
+import { getAvatar } from '@/lib/avatarStorage';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', permission: 'dashboard' as Permission },
@@ -28,6 +29,15 @@ export const Sidebar = ({ mobile, onNavigate }: SidebarProps) => {
   const { currentUser, setCurrentUser, isOffline } = usePOS();
   const userRole = currentUser?.role || 'cashier';
   const [profileOpen, setProfileOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentUser?.avatarKey) {
+      getAvatar(currentUser.avatarKey).then(setAvatarUrl);
+    } else {
+      setAvatarUrl(null);
+    }
+  }, [currentUser?.avatarKey]);
 
   const handleLogout = () => { 
     setCurrentUser(null); 
@@ -98,9 +108,13 @@ export const Sidebar = ({ mobile, onNavigate }: SidebarProps) => {
           onClick={() => setProfileOpen(true)}
           className="flex items-center gap-3 mb-3 w-full text-left hover:bg-sidebar-accent rounded-lg p-2 -m-2 transition-colors"
         >
-          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-            <span className="text-sm font-semibold text-secondary-foreground">{currentUser?.name.charAt(0) || 'U'}</span>
-          </div>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={currentUser?.name} className="w-10 h-10 rounded-full object-cover" />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+              <span className="text-sm font-semibold text-secondary-foreground">{currentUser?.name.charAt(0) || 'U'}</span>
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{currentUser?.name || 'Guest'}</p>
             <p className="text-xs text-muted-foreground capitalize">{currentUser?.role || 'Not logged in'}</p>

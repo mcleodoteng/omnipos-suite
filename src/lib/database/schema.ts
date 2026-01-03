@@ -35,8 +35,19 @@ CREATE TABLE IF NOT EXISTS users (
   pin TEXT NOT NULL,
   email TEXT,
   phone TEXT,
+  avatar_key TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   last_login TEXT
+);
+
+-- Login history table
+CREATE TABLE IF NOT EXISTS login_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  user_name TEXT NOT NULL,
+  login_at TEXT NOT NULL,
+  user_agent TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Transactions table

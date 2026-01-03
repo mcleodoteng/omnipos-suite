@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, ShoppingCart, Package, BarChart3, Settings, LogOut, Receipt, Users, Wifi, WifiOff, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePOS } from '@/contexts/POSContext';
 import { Button } from '@/components/ui/button';
 import { hasPermission, Permission } from '@/types/pos';
+import { UserProfileModal } from './UserProfileModal';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', permission: 'dashboard' as Permission },
@@ -25,6 +27,7 @@ export const Sidebar = ({ mobile, onNavigate }: SidebarProps) => {
   const location = useLocation();
   const { currentUser, setCurrentUser, isOffline } = usePOS();
   const userRole = currentUser?.role || 'cashier';
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const handleLogout = () => { 
     setCurrentUser(null); 
@@ -91,7 +94,10 @@ export const Sidebar = ({ mobile, onNavigate }: SidebarProps) => {
       </nav>
 
       <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-sidebar-border">
-        <div className="flex items-center gap-3 mb-3">
+        <button
+          onClick={() => setProfileOpen(true)}
+          className="flex items-center gap-3 mb-3 w-full text-left hover:bg-sidebar-accent rounded-lg p-2 -m-2 transition-colors"
+        >
           <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
             <span className="text-sm font-semibold text-secondary-foreground">{currentUser?.name.charAt(0) || 'U'}</span>
           </div>
@@ -99,11 +105,13 @@ export const Sidebar = ({ mobile, onNavigate }: SidebarProps) => {
             <p className="text-sm font-medium text-foreground truncate">{currentUser?.name || 'Guest'}</p>
             <p className="text-xs text-muted-foreground capitalize">{currentUser?.role || 'Not logged in'}</p>
           </div>
-        </div>
+        </button>
         <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground hover:text-destructive" onClick={handleLogout}>
           <LogOut className="w-4 h-4 mr-2" />Logout
         </Button>
       </div>
+
+      <UserProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </aside>
   );
 };

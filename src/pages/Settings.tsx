@@ -20,7 +20,8 @@ import {
   Calendar,
   Table2,
   Clock,
-  Key
+  Key,
+  Timer
 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -328,6 +329,52 @@ export const Settings = () => {
           </div>
           
           <UserPasswordSettings />
+        </div>
+
+        {/* Session Timeout Settings */}
+        <div className="pos-card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <Timer className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Session Timeout</h3>
+              <p className="text-sm text-muted-foreground">Auto-logout after inactivity</p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between py-3 border-b border-border">
+              <div>
+                <p className="font-medium text-foreground">Enable Session Timeout</p>
+                <p className="text-sm text-muted-foreground">Automatically log out inactive users</p>
+              </div>
+              <Switch 
+                checked={localSettings.sessionTimeoutEnabled}
+                onCheckedChange={(checked) => setLocalSettings(s => ({ ...s, sessionTimeoutEnabled: checked }))}
+              />
+            </div>
+            
+            {localSettings.sessionTimeoutEnabled && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Timeout Duration (minutes)</label>
+                <select 
+                  className="mt-1 w-full h-10 rounded-md border border-border bg-background px-3 text-sm"
+                  value={localSettings.sessionTimeoutMinutes}
+                  onChange={(e) => setLocalSettings(s => ({ ...s, sessionTimeoutMinutes: parseInt(e.target.value) }))}
+                >
+                  <option value="5">5 minutes</option>
+                  <option value="10">10 minutes</option>
+                  <option value="15">15 minutes</option>
+                  <option value="30">30 minutes</option>
+                  <option value="60">1 hour</option>
+                </select>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  A warning will appear 1 minute before automatic logout
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Currency Settings */}

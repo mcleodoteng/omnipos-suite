@@ -16,6 +16,8 @@ export interface POSSettings {
   soundEffects: boolean;
   currency: string;
   lowStockThreshold: number;
+  sessionTimeoutEnabled: boolean;
+  sessionTimeoutMinutes: number;
 }
 
 const defaultSettings: POSSettings = {
@@ -33,6 +35,8 @@ const defaultSettings: POSSettings = {
   soundEffects: false,
   currency: 'GHS',
   lowStockThreshold: 20,
+  sessionTimeoutEnabled: true,
+  sessionTimeoutMinutes: 15,
 };
 
 export async function getSettings(): Promise<POSSettings> {
@@ -61,6 +65,8 @@ export async function getSettings(): Promise<POSSettings> {
     soundEffects: settings.soundEffects === 'true',
     currency: settings.currency || defaultSettings.currency,
     lowStockThreshold: parseInt(settings.lowStockThreshold) || defaultSettings.lowStockThreshold,
+    sessionTimeoutEnabled: settings.sessionTimeoutEnabled !== 'false',
+    sessionTimeoutMinutes: parseInt(settings.sessionTimeoutMinutes) || defaultSettings.sessionTimeoutMinutes,
   };
 }
 

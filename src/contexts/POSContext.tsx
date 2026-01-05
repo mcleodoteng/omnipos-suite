@@ -51,6 +51,8 @@ const defaultSettings: POSSettings = {
   soundEffects: false,
   currency: 'GHS',
   lowStockThreshold: 20,
+  sessionTimeoutEnabled: true,
+  sessionTimeoutMinutes: 15,
 };
 
 const POSContext = createContext<POSContextType | undefined>(undefined);

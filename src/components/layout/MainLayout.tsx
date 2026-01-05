@@ -1,8 +1,13 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
+import { SessionTimeoutDialog } from './SessionTimeoutDialog';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { usePOS } from '@/contexts/POSContext';
+import { useIdleTimeout } from '@/hooks/useIdleTimeout';
+import { toast } from 'sonner';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -10,9 +15,31 @@ interface MainLayoutProps {
 
 export const MainLayout = ({ children }: MainLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { currentUser, setCurrentUser, settings } = usePOS();
+  const navigate = useNavigate();
+
+  const handleSessionTimeout = async () => {
+    await setCurrentUser(null);
+    toast.info('You have been logged out due to inactivity');
+    navigate('/');
+  };
+
+  const { isWarningVisible, remainingSeconds, extendSession } = useIdleTimeout({
+    timeoutMinutes: settings.sessionTimeoutMinutes,
+    warningMinutes: 1,
+    onTimeout: handleSessionTimeout,
+    enabled: settings.sessionTimeoutEnabled && !!currentUser,
+  });
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Session Timeout Warning Dialog */}
+      <SessionTimeoutDialog
+        open={isWarningVisible}
+        remainingSeconds={remainingSeconds}
+        onExtend={extendSession}
+      />
+
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar />

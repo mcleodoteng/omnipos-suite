@@ -52,10 +52,42 @@ async function loadFromIndexedDB(): Promise<Uint8Array | null> {
   }
 }
 
+// Run database migrations for schema updates
+function runMigrations(database: Database): void {
+  // Check if avatar_key column exists in users table
+  const usersTableInfo = database.exec("PRAGMA table_info(users)");
+  if (usersTableInfo.length > 0) {
+    const columns = usersTableInfo[0].values.map((row: any) => row[1]);
+    if (!columns.includes('avatar_key')) {
+      console.log('Adding avatar_key column to users table...');
+      database.run('ALTER TABLE users ADD COLUMN avatar_key TEXT');
+    }
+  }
+
+  // Check if login_history table exists
+  const tables = database.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='login_history'");
+  if (tables.length === 0 || tables[0].values.length === 0) {
+    console.log('Creating login_history table...');
+    database.run(`
+      CREATE TABLE IF NOT EXISTS login_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        user_name TEXT NOT NULL,
+        login_at TEXT NOT NULL,
+        user_agent TEXT,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+  }
+}
+
 // Initialize database with schema and seed data
 function initializeDatabase(database: Database): void {
   // Create tables
   database.run(SCHEMA_SQL);
+  
+  // Run migrations for existing databases
+  runMigrations(database);
   
   // Check if we need to seed data
   const productCount = database.exec('SELECT COUNT(*) FROM products')[0];

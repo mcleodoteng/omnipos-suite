@@ -47,7 +47,7 @@ export const Settings = () => {
   const dbFileInputRef = useRef<HTMLInputElement>(null);
   
   const [localSettings, setLocalSettings] = useState(settings);
-  const [categories, setCategories] = useState<Category[]>(() => getStoredCategories());
+  const [categories, setCategories] = useState<Category[]>(() => posCategories.length > 0 ? posCategories : getStoredCategories());
   const [newCategory, setNewCategory] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);

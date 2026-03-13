@@ -29,7 +29,7 @@ const generateBarcode = () => {
 
 export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductModalProps) => {
   const { symbol } = useCurrency();
-  const { currentUser } = usePOS();
+  const { currentUser, categories: allCategories } = usePOS();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [categories, setCategories] = useState<Category[]>();
   const [originalStock, setOriginalStock] = useState(0);

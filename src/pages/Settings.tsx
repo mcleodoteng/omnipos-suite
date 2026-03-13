@@ -88,8 +88,10 @@ export const Settings = () => {
         // Reload database and refresh POS data without page reload
         await reloadDatabase();
         await refreshData();
-        // Navigate to dashboard to show updated data
-        navigate('/');
+        // Update local state to match refreshed data
+        setLocalSettings(settings);
+        setCategories(posCategories);
+        toast.success('All data refreshed successfully!');
       } else {
         toast.error('Failed to import database. Invalid file format.');
       }

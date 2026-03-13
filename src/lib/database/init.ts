@@ -241,8 +241,14 @@ export async function importDatabase(data: Uint8Array): Promise<void> {
   // Create new database from imported data
   db = new SQL.Database(data);
   
+  // Run migrations on imported database to ensure schema is up to date
+  runMigrations(db);
+  
   // Persist the imported database
   await persistDatabase();
+  
+  // Reset init promise so future getDatabase calls use this instance
+  initPromise = Promise.resolve(db);
   
   console.log('Database imported successfully');
 }

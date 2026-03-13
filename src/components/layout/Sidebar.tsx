@@ -14,6 +14,7 @@ const navItems = [
   { icon: Package, label: 'Inventory', path: '/inventory', permission: 'inventory' as Permission },
   { icon: ClipboardList, label: 'Stock Report', path: '/stock-report', permission: 'inventory' as Permission },
   { icon: Receipt, label: 'Transactions', path: '/transactions', permission: 'transactions' as Permission },
+  { icon: FileText, label: 'Invoices', path: '/invoices', permission: 'invoices' as Permission },
   { icon: BarChart3, label: 'Reports', path: '/reports', permission: 'reports' as Permission },
   { icon: Users, label: 'Users', path: '/users', permission: 'users' as Permission },
   { icon: Settings, label: 'Settings', path: '/settings', permission: 'settings' as Permission },

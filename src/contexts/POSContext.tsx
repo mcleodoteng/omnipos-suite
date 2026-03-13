@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Product, CartItem, Transaction, User } from '@/types/pos';
+import { Product, CartItem, Transaction, User, Category } from '@/types/pos';
 import { useDatabase } from './DatabaseContext';
 import { 
   getAllProducts, 
@@ -12,6 +12,8 @@ import {
   updateSettings as dbUpdateSettings,
   createStockAdjustment,
   updateProductStock,
+  getAllCategories,
+  saveAllCategories,
   POSSettings
 } from '@/lib/database';
 
@@ -20,6 +22,8 @@ interface POSContextType {
   setCurrentUser: (user: User | null) => void;
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  categories: Category[];
+  setCategories: (categories: Category[]) => void;
   cart: CartItem[];
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
@@ -61,6 +65,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { isReady } = useDatabase();
   const [currentUser, setCurrentUserState] = useState<User | null>(null);
   const [products, setProductsState] = useState<Product[]>([]);
+  const [categories, setCategoriesState] = useState<Category[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [transactions, setTransactionsState] = useState<Transaction[]>([]);
   const [settings, setSettingsState] = useState<POSSettings>(defaultSettings);
@@ -72,21 +77,24 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const loadData = async () => {
       try {
-        const [loadedProducts, loadedTransactions, loadedUser, loadedSettings] = await Promise.all([
+        const [loadedProducts, loadedTransactions, loadedUser, loadedSettings, loadedCategories] = await Promise.all([
           getAllProducts(),
           getAllTransactions(),
           getCurrentUser(),
           getSettings(),
+          getAllCategories(),
         ]);
         
         setProductsState(loadedProducts);
         setTransactionsState(loadedTransactions);
         setCurrentUserState(loadedUser);
         setSettingsState(loadedSettings);
+        setCategoriesState(loadedCategories);
         
         console.log('Data loaded from SQLite:', {
           products: loadedProducts.length,
           transactions: loadedTransactions.length,
+          categories: loadedCategories.length,
           user: loadedUser?.name,
         });
       } catch (error) {
@@ -115,15 +123,17 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const refreshData = useCallback(async () => {
     if (!isReady) return;
     
-    const [loadedProducts, loadedTransactions, loadedSettings] = await Promise.all([
+    const [loadedProducts, loadedTransactions, loadedSettings, loadedCategories] = await Promise.all([
       getAllProducts(),
       getAllTransactions(),
       getSettings(),
+      getAllCategories(),
     ]);
     
     setProductsState(loadedProducts);
     setTransactionsState(loadedTransactions);
     setSettingsState(loadedSettings);
+    setCategoriesState(loadedCategories);
   }, [isReady]);
 
   // Set current user
@@ -143,6 +153,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return newProducts;
     });
+  }, [isReady]);
+
+  // Set categories with persistence
+  const setCategories = useCallback(async (newCategories: Category[]) => {
+    setCategoriesState(newCategories);
+    if (isReady) {
+      await saveAllCategories(newCategories).catch(console.error);
+    }
   }, [isReady]);
 
   // Update settings
@@ -241,6 +259,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCurrentUser,
         products,
         setProducts,
+        categories,
+        setCategories,
         cart,
         addToCart,
         removeFromCart,

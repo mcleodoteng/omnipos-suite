@@ -59,7 +59,7 @@ export const Settings = () => {
 
   const handleSave = () => {
     updateSettings(localSettings);
-    saveCategories(categories);
+    setPOSCategories(categories);
     toast.success('Settings saved successfully!');
   };
 

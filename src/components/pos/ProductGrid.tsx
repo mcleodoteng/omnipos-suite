@@ -1,26 +1,20 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, Package, ZoomIn, Grid3X3, List, ShoppingBag, Sparkles, TrendingUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { usePOS } from '@/contexts/POSContext';
-import { getStoredCategories } from '@/lib/storage';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ProductDetailModal } from '@/components/pos/ProductDetailModal';
-import { Product, Category } from '@/types/pos';
+import { Product } from '@/types/pos';
 
 export const ProductGrid = () => {
-  const { products, addToCart, transactions } = usePOS();
+  const { products, addToCart, transactions, categories } = usePOS();
   const { formatPrice } = useCurrency();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Items');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  useEffect(() => {
-    setCategories(getStoredCategories());
-  }, []);
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => {

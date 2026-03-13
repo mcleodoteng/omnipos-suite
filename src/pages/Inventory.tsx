@@ -11,7 +11,7 @@ import { ProductModal } from '@/components/inventory/ProductModal';
 import { useCurrency } from '@/hooks/useCurrency';
 
 export const Inventory = () => {
-  const { products, setProducts, settings } = usePOS();
+  const { products, setProducts, settings, categories } = usePOS();
   const { formatPrice } = useCurrency();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Items');

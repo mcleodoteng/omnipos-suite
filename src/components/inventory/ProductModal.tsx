@@ -48,9 +48,8 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
   });
 
   useEffect(() => {
-    const storedCategories = getStoredCategories();
-    setCategories(storedCategories.filter(c => c.name !== 'All Items'));
-  }, [open]);
+    setCategories(allCategories.filter(c => c.name !== 'All Items'));
+  }, [open, allCategories]);
 
   useEffect(() => {
     if (product) {

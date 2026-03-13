@@ -79,6 +79,45 @@ function runMigrations(database: Database): void {
       )
     `);
   }
+
+  // Check if invoices table exists
+  const invoicesTables = database.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='invoices'");
+  if (invoicesTables.length === 0 || invoicesTables[0].values.length === 0) {
+    console.log('Creating invoices tables...');
+    database.run(`
+      CREATE TABLE IF NOT EXISTS invoices (
+        id TEXT PRIMARY KEY,
+        invoice_number TEXT NOT NULL UNIQUE,
+        client_name TEXT NOT NULL,
+        client_email TEXT,
+        client_phone TEXT,
+        client_address TEXT,
+        subtotal REAL NOT NULL,
+        tax REAL NOT NULL,
+        tax_rate REAL NOT NULL,
+        discount REAL NOT NULL DEFAULT 0,
+        total REAL NOT NULL,
+        notes TEXT,
+        status TEXT NOT NULL CHECK(status IN ('draft', 'sent', 'paid', 'cancelled')),
+        created_at TEXT NOT NULL,
+        due_date TEXT,
+        created_by TEXT NOT NULL
+      )
+    `);
+    database.run(`
+      CREATE TABLE IF NOT EXISTS invoice_items (
+        id TEXT PRIMARY KEY,
+        invoice_id TEXT NOT NULL,
+        description TEXT NOT NULL,
+        quantity REAL NOT NULL,
+        unit_price REAL NOT NULL,
+        total REAL NOT NULL,
+        FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+      )
+    `);
+    database.run('CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)');
+    database.run('CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id)');
+  }
 }
 
 // Initialize database with schema and seed data

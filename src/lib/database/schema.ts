@@ -125,6 +125,37 @@ CREATE TABLE IF NOT EXISTS current_session (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- Invoices table
+CREATE TABLE IF NOT EXISTS invoices (
+  id TEXT PRIMARY KEY,
+  invoice_number TEXT NOT NULL UNIQUE,
+  client_name TEXT NOT NULL,
+  client_email TEXT,
+  client_phone TEXT,
+  client_address TEXT,
+  subtotal REAL NOT NULL,
+  tax REAL NOT NULL,
+  tax_rate REAL NOT NULL,
+  discount REAL NOT NULL DEFAULT 0,
+  total REAL NOT NULL,
+  notes TEXT,
+  status TEXT NOT NULL CHECK(status IN ('draft', 'sent', 'paid', 'cancelled')),
+  created_at TEXT NOT NULL,
+  due_date TEXT,
+  created_by TEXT NOT NULL
+);
+
+-- Invoice items table
+CREATE TABLE IF NOT EXISTS invoice_items (
+  id TEXT PRIMARY KEY,
+  invoice_id TEXT NOT NULL,
+  description TEXT NOT NULL,
+  quantity REAL NOT NULL,
+  unit_price REAL NOT NULL,
+  total REAL NOT NULL,
+  FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
@@ -134,6 +165,8 @@ CREATE INDEX IF NOT EXISTS idx_transactions_cashier ON transactions(cashier);
 CREATE INDEX IF NOT EXISTS idx_stock_adjustments_product ON stock_adjustments(product_id);
 CREATE INDEX IF NOT EXISTS idx_stock_adjustments_date ON stock_adjustments(adjusted_at);
 CREATE INDEX IF NOT EXISTS idx_transaction_items_transaction ON transaction_items(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id);
 `;
 
 export const INITIAL_SETTINGS = {

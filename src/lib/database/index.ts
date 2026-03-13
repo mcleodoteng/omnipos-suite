@@ -10,6 +10,7 @@ export * from './repositories/settingsRepository';
 export * from './repositories/stockAdjustmentRepository';
 export * from './repositories/cashDrawerRepository';
 export * from './repositories/loginHistoryRepository';
+export * from './repositories/invoiceRepository';
 
 // Types
 export type { POSSettings } from './repositories/settingsRepository';

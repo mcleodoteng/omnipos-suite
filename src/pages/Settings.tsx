@@ -31,7 +31,7 @@ import { Switch } from '@/components/ui/switch';
 import { usePOS } from '@/contexts/POSContext';
 import { useDatabase } from '@/contexts/DatabaseContext';
 import { useDatabaseStats } from '@/hooks/useDatabaseStats';
-import { getStoredCategories, saveCategories } from '@/lib/storage';
+import { getStoredCategories } from '@/lib/storage';
 import { toast } from 'sonner';
 import { CURRENCIES, Category } from '@/types/pos';
 import { AutoBackupSettings } from '@/components/settings/AutoBackupSettings';

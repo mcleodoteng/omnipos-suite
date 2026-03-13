@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShoppingCart, Package, BarChart3, Settings, LogOut, Receipt, Users, Wifi, WifiOff, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, BarChart3, Settings, LogOut, Receipt, Users, Wifi, WifiOff, ClipboardList, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePOS } from '@/contexts/POSContext';
 import { Button } from '@/components/ui/button';

@@ -112,7 +112,7 @@ export async function downloadBackup(backup: BackupEntry): Promise<void> {
 }
 
 export function useAutoBackup(onBackupComplete?: () => void) {
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const settingsRef = useRef<AutoBackupSettings>(defaultSettings);
 
   const performBackup = useCallback(async () => {

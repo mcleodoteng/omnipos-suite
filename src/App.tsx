@@ -14,6 +14,7 @@ import Reports from "./pages/Reports";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import StockReport from "./pages/StockReport";
+import Invoices from "./pages/Invoices";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 

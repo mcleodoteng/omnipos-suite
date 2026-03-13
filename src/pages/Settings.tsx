@@ -40,7 +40,7 @@ import { useAutoBackup } from '@/hooks/useAutoBackup';
 
 export const Settings = () => {
   const navigate = useNavigate();
-  const { settings, updateSettings, products, transactions, refreshData } = usePOS();
+  const { settings, updateSettings, products, transactions, refreshData, categories: posCategories, setCategories: setPOSCategories } = usePOS();
   const { exportData, importData, resetDatabase, reloadDatabase } = useDatabase();
   const { stats, isLoading: statsLoading, refetchStats, updateLastBackupDate } = useDatabaseStats();
   const fileInputRef = useRef<HTMLInputElement>(null);

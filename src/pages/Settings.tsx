@@ -31,7 +31,7 @@ import { Switch } from '@/components/ui/switch';
 import { usePOS } from '@/contexts/POSContext';
 import { useDatabase } from '@/contexts/DatabaseContext';
 import { useDatabaseStats } from '@/hooks/useDatabaseStats';
-import { getStoredCategories, saveCategories } from '@/lib/storage';
+import { getStoredCategories } from '@/lib/storage';
 import { toast } from 'sonner';
 import { CURRENCIES, Category } from '@/types/pos';
 import { AutoBackupSettings } from '@/components/settings/AutoBackupSettings';
@@ -40,14 +40,14 @@ import { useAutoBackup } from '@/hooks/useAutoBackup';
 
 export const Settings = () => {
   const navigate = useNavigate();
-  const { settings, updateSettings, products, transactions, refreshData } = usePOS();
+  const { settings, updateSettings, products, transactions, refreshData, categories: posCategories, setCategories: setPOSCategories } = usePOS();
   const { exportData, importData, resetDatabase, reloadDatabase } = useDatabase();
   const { stats, isLoading: statsLoading, refetchStats, updateLastBackupDate } = useDatabaseStats();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dbFileInputRef = useRef<HTMLInputElement>(null);
   
   const [localSettings, setLocalSettings] = useState(settings);
-  const [categories, setCategories] = useState<Category[]>(() => getStoredCategories());
+  const [categories, setCategories] = useState<Category[]>(() => posCategories.length > 0 ? posCategories : getStoredCategories());
   const [newCategory, setNewCategory] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -59,7 +59,7 @@ export const Settings = () => {
 
   const handleSave = () => {
     updateSettings(localSettings);
-    saveCategories(categories);
+    setPOSCategories(categories);
     toast.success('Settings saved successfully!');
   };
 
@@ -88,8 +88,10 @@ export const Settings = () => {
         // Reload database and refresh POS data without page reload
         await reloadDatabase();
         await refreshData();
-        // Navigate to dashboard to show updated data
-        navigate('/');
+        // Update local state to match refreshed data
+        setLocalSettings(settings);
+        setCategories(posCategories);
+        toast.success('All data refreshed successfully!');
       } else {
         toast.error('Failed to import database. Invalid file format.');
       }

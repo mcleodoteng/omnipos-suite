@@ -5,14 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePOS } from '@/contexts/POSContext';
 import { cn } from '@/lib/utils';
-import { categories } from '@/data/mockData';
 import { toast } from 'sonner';
 import { Product } from '@/types/pos';
 import { ProductModal } from '@/components/inventory/ProductModal';
 import { useCurrency } from '@/hooks/useCurrency';
 
 export const Inventory = () => {
-  const { products, setProducts, settings } = usePOS();
+  const { products, setProducts, settings, categories } = usePOS();
   const { formatPrice } = useCurrency();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Items');

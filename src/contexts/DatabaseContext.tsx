@@ -94,7 +94,9 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           indexedDB.deleteDatabase(db.name);
         }
       }
-      // Reload to reinitialize
+      // Clear localStorage
+      localStorage.clear();
+      // Reload to reinitialize with fresh data
       window.location.reload();
     } catch (err) {
       console.error('Reset failed:', err);

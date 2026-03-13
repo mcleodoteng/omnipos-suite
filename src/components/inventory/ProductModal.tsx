@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { NumberInput } from '@/components/ui/number-input';
 import { Product, Category } from '@/types/pos';
 import { useCurrency } from '@/hooks/useCurrency';
-import { getStoredCategories } from '@/lib/storage';
 import { addStockAdjustment } from '@/lib/stockAdjustments';
 import { usePOS } from '@/contexts/POSContext';
 
@@ -29,7 +28,7 @@ const generateBarcode = () => {
 
 export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductModalProps) => {
   const { symbol } = useCurrency();
-  const { currentUser } = usePOS();
+  const { currentUser, categories: allCategories } = usePOS();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [categories, setCategories] = useState<Category[]>();
   const [originalStock, setOriginalStock] = useState(0);
@@ -48,9 +47,8 @@ export const ProductModal = ({ open, onClose, onSave, product, mode }: ProductMo
   });
 
   useEffect(() => {
-    const storedCategories = getStoredCategories();
-    setCategories(storedCategories.filter(c => c.name !== 'All Items'));
-  }, [open]);
+    setCategories(allCategories.filter(c => c.name !== 'All Items'));
+  }, [open, allCategories]);
 
   useEffect(() => {
     if (product) {

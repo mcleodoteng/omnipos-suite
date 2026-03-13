@@ -72,6 +72,34 @@ export interface StockAdjustment {
   type: 'add' | 'remove' | 'set' | 'sale';
 }
 
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  clientName: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  items: InvoiceItem[];
+  subtotal: number;
+  tax: number;
+  taxRate: number;
+  discount: number;
+  total: number;
+  notes?: string;
+  status: 'draft' | 'sent' | 'paid' | 'cancelled';
+  createdAt: Date;
+  dueDate?: Date;
+  createdBy: string;
+}
+
 export interface CashDrawer {
   id: string;
   openedAt: Date;
@@ -110,8 +138,8 @@ export const CURRENCIES: Currency[] = [
 // Role-based permissions
 export const ROLE_PERMISSIONS: Record<User['role'], string[]> = {
   cashier: ['pos', 'transactions_own', 'dashboard'],
-  manager: ['pos', 'transactions', 'inventory', 'reports', 'dashboard'],
-  admin: ['pos', 'transactions', 'inventory', 'reports', 'users', 'settings', 'dashboard'],
+  manager: ['pos', 'transactions', 'inventory', 'reports', 'invoices', 'dashboard'],
+  admin: ['pos', 'transactions', 'inventory', 'reports', 'users', 'settings', 'invoices', 'dashboard'],
 };
 
 export type Permission = 
@@ -122,6 +150,7 @@ export type Permission =
   | 'reports' 
   | 'users' 
   | 'settings' 
+  | 'invoices'
   | 'dashboard';
 
 export const hasPermission = (role: User['role'], permission: Permission): boolean => {

@@ -14,6 +14,7 @@ import Reports from "./pages/Reports";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import StockReport from "./pages/StockReport";
+import Invoices from "./pages/Invoices";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -74,6 +75,7 @@ const AppRoutes = () => {
       <Route path="/pos" element={<ProtectedRoute><POSTerminal /></ProtectedRoute>} />
       <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
       <Route path="/stock-report" element={<ProtectedRoute><StockReport /></ProtectedRoute>} />
+      <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
       <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />

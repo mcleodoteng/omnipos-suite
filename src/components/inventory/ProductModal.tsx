@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { NumberInput } from '@/components/ui/number-input';
 import { Product, Category } from '@/types/pos';
 import { useCurrency } from '@/hooks/useCurrency';
-import { usePOS } from '@/contexts/POSContext';
 import { addStockAdjustment } from '@/lib/stockAdjustments';
 import { usePOS } from '@/contexts/POSContext';
 

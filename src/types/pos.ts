@@ -72,6 +72,34 @@ export interface StockAdjustment {
   type: 'add' | 'remove' | 'set' | 'sale';
 }
 
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  clientName: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  items: InvoiceItem[];
+  subtotal: number;
+  tax: number;
+  taxRate: number;
+  discount: number;
+  total: number;
+  notes?: string;
+  status: 'draft' | 'sent' | 'paid' | 'cancelled';
+  createdAt: Date;
+  dueDate?: Date;
+  createdBy: string;
+}
+
 export interface CashDrawer {
   id: string;
   openedAt: Date;

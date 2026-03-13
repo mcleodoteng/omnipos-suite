@@ -138,8 +138,8 @@ export const CURRENCIES: Currency[] = [
 // Role-based permissions
 export const ROLE_PERMISSIONS: Record<User['role'], string[]> = {
   cashier: ['pos', 'transactions_own', 'dashboard'],
-  manager: ['pos', 'transactions', 'inventory', 'reports', 'dashboard'],
-  admin: ['pos', 'transactions', 'inventory', 'reports', 'users', 'settings', 'dashboard'],
+  manager: ['pos', 'transactions', 'inventory', 'reports', 'invoices', 'dashboard'],
+  admin: ['pos', 'transactions', 'inventory', 'reports', 'users', 'settings', 'invoices', 'dashboard'],
 };
 
 export type Permission = 
@@ -150,6 +150,7 @@ export type Permission =
   | 'reports' 
   | 'users' 
   | 'settings' 
+  | 'invoices'
   | 'dashboard';
 
 export const hasPermission = (role: User['role'], permission: Permission): boolean => {

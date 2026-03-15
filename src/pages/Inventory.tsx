@@ -75,11 +75,12 @@ export const Inventory = () => {
     }
   };
 
+  const [deleteConfirmProductId, setDeleteConfirmProductId] = useState<string | null>(null);
+
   const handleDeleteProduct = (productId: string) => {
-    if (confirm('Are you sure you want to delete this product?')) {
-      setProducts(prev => prev.filter(p => p.id !== productId));
-      toast.success('Product deleted');
-    }
+    setProducts(prev => prev.filter(p => p.id !== productId));
+    setDeleteConfirmProductId(null);
+    toast.success('Product deleted');
   };
 
   return (

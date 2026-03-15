@@ -259,7 +259,7 @@ export function AutoBackupSettings({ onSettingsChange }: AutoBackupSettingsProps
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDeleteBackup(backup.id)}
+                    onClick={() => setDeleteConfirmBackupId(backup.id)}
                     className="hover:text-destructive"
                   >
                     <Trash2 className="w-4 h-4" />

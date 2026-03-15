@@ -580,7 +580,7 @@ export const Invoices = () => {
                             {invoice.status !== 'cancelled' && invoice.status !== 'paid' && (
                               <button onClick={() => handleStatusChange(invoice.id, 'cancelled')} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Cancel"><XCircle className="w-4 h-4" /></button>
                             )}
-                            <button onClick={() => handleDelete(invoice.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={() => setDeleteConfirmId(invoice.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Delete"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </td>
                       </tr>

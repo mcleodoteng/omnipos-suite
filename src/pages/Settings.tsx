@@ -23,6 +23,16 @@ import {
   Key,
   Timer
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,15 +115,19 @@ export const Settings = () => {
     }
   };
 
+  const [showResetDialog, setShowResetDialog] = useState(false);
+
   const handleResetDatabase = async () => {
-    if (confirm('Are you sure you want to reset the database? This will delete all data and cannot be undone.')) {
-      try {
-        await resetDatabase();
-        toast.success('Database reset. Refreshing...');
-      } catch (err) {
-        toast.error('Failed to reset database');
-      }
+    try {
+      await resetDatabase();
+      await refreshData();
+      setLocalSettings(settings);
+      setCategories(posCategories);
+      toast.success('Database reset successfully! All data cleared except admin account.');
+    } catch (err) {
+      toast.error('Failed to reset database');
     }
+    setShowResetDialog(false);
   };
 
   const handleAddCategory = () => {
@@ -285,7 +299,7 @@ export const Settings = () => {
             <Button 
               variant="outline" 
               className="h-auto py-4 border-destructive/30 hover:bg-destructive/10 hover:text-destructive" 
-              onClick={handleResetDatabase}
+              onClick={() => setShowResetDialog(true)}
             >
               <div className="text-center">
                 <Trash2 className="w-6 h-6 mx-auto mb-2" />
@@ -699,6 +713,24 @@ export const Settings = () => {
             Save Settings
           </Button>
         </div>
+
+        {/* Reset Database Confirmation Dialog */}
+        <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset Database</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to reset the database? This will permanently delete all inventory, transactions, invoices, reports, and user data. Only the default admin account will be preserved. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleResetDatabase} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Reset Database
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   );

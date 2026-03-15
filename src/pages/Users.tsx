@@ -11,6 +11,16 @@ import { ResetPinModal } from '@/components/users/ResetPinModal';
 import { LoginHistoryModal } from '@/components/users/LoginHistoryModal';
 import { usePOS } from '@/contexts/POSContext';
 import { getAvatar } from '@/lib/avatarStorage';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export const Users = () => {
   const { currentUser } = usePOS();
@@ -94,16 +104,17 @@ export const Users = () => {
     }
   };
 
+  const [deleteConfirmUserId, setDeleteConfirmUserId] = useState<string | null>(null);
+
   const handleDeleteUser = async (userId: string) => {
-    if (confirm('Are you sure you want to delete this user?')) {
-      try {
-        await deleteUser(userId);
-        toast.success('User deleted');
-        await loadUsers();
-      } catch (error) {
-        toast.error('Failed to delete user');
-      }
+    try {
+      await deleteUser(userId);
+      toast.success('User deleted');
+      await loadUsers();
+    } catch (error) {
+      toast.error('Failed to delete user');
     }
+    setDeleteConfirmUserId(null);
   };
 
   return (
@@ -151,7 +162,7 @@ export const Users = () => {
                     {isAdmin && user.id !== currentUser?.id && (
                       <button onClick={() => handleResetPin(user)} className="p-2 rounded-lg hover:bg-warning/10 text-muted-foreground hover:text-warning transition-colors" title="Reset PIN"><KeyRound className="w-4 h-4" /></button>
                     )}
-                    <button onClick={() => handleDeleteUser(user.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => setDeleteConfirmUserId(user.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
                 <div className="space-y-2 text-sm">
@@ -181,6 +192,23 @@ export const Users = () => {
         user={selectedUser} 
       />
       <LoginHistoryModal open={showLoginHistory} onClose={() => setShowLoginHistory(false)} />
+      
+      <AlertDialog open={!!deleteConfirmUserId} onOpenChange={() => setDeleteConfirmUserId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this user? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteConfirmUserId && handleDeleteUser(deleteConfirmUserId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };

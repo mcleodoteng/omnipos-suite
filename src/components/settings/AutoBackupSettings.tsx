@@ -20,6 +20,16 @@ import {
   BackupEntry,
 } from '@/hooks/useAutoBackup';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface AutoBackupSettingsProps {
   onSettingsChange?: () => void;
@@ -109,9 +119,9 @@ export function AutoBackupSettings({ onSettingsChange }: AutoBackupSettingsProps
     }
   };
 
+  const [deleteConfirmBackupId, setDeleteConfirmBackupId] = useState<string | null>(null);
+
   const handleDeleteBackup = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this backup?')) return;
-    
     try {
       await deleteBackup(id);
       setBackups(backups.filter(b => b.id !== id));
@@ -119,6 +129,7 @@ export function AutoBackupSettings({ onSettingsChange }: AutoBackupSettingsProps
     } catch (error) {
       toast.error('Failed to delete backup');
     }
+    setDeleteConfirmBackupId(null);
   };
 
   const handleDownloadBackup = async (backup: BackupEntry) => {
@@ -248,7 +259,7 @@ export function AutoBackupSettings({ onSettingsChange }: AutoBackupSettingsProps
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDeleteBackup(backup.id)}
+                    onClick={() => setDeleteConfirmBackupId(backup.id)}
                     className="hover:text-destructive"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -267,6 +278,23 @@ export function AutoBackupSettings({ onSettingsChange }: AutoBackupSettingsProps
           Up to 10 backups are kept; older ones are automatically deleted.
         </p>
       </div>
+
+      <AlertDialog open={!!deleteConfirmBackupId} onOpenChange={() => setDeleteConfirmBackupId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Backup</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this backup? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteConfirmBackupId && handleDeleteBackup(deleteConfirmBackupId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

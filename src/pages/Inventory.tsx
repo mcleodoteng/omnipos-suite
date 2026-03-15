@@ -9,6 +9,16 @@ import { toast } from 'sonner';
 import { Product } from '@/types/pos';
 import { ProductModal } from '@/components/inventory/ProductModal';
 import { useCurrency } from '@/hooks/useCurrency';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export const Inventory = () => {
   const { products, setProducts, settings, categories } = usePOS();
@@ -65,11 +75,12 @@ export const Inventory = () => {
     }
   };
 
+  const [deleteConfirmProductId, setDeleteConfirmProductId] = useState<string | null>(null);
+
   const handleDeleteProduct = (productId: string) => {
-    if (confirm('Are you sure you want to delete this product?')) {
-      setProducts(prev => prev.filter(p => p.id !== productId));
-      toast.success('Product deleted');
-    }
+    setProducts(prev => prev.filter(p => p.id !== productId));
+    setDeleteConfirmProductId(null);
+    toast.success('Product deleted');
   };
 
   return (
@@ -134,7 +145,7 @@ export const Inventory = () => {
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => handleViewProduct(product)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="View"><Eye className="w-4 h-4" /></button>
                         <button onClick={() => handleEditProduct(product)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Edit"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => handleDeleteProduct(product.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => setDeleteConfirmProductId(product.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -149,6 +160,23 @@ export const Inventory = () => {
       </div>
 
       <ProductModal open={showModal} onClose={() => setShowModal(false)} onSave={handleSaveProduct} product={selectedProduct} mode={modalMode} />
+      
+      <AlertDialog open={!!deleteConfirmProductId} onOpenChange={() => setDeleteConfirmProductId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Product</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this product? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteConfirmProductId && handleDeleteProduct(deleteConfirmProductId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };

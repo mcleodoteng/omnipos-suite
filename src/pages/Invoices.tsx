@@ -1,15 +1,28 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, FileText, Printer, Trash2, Eye, Search, Send, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, FileText, Printer, Trash2, Eye, Search, Send, CheckCircle, XCircle, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NumberInput } from '@/components/ui/number-input';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { usePOS } from '@/contexts/POSContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { toast } from 'sonner';
 import { Invoice, InvoiceItem, Product } from '@/types/pos';
 import { getAllInvoices, createInvoice, updateInvoiceStatus, deleteInvoice, getNextInvoiceNumber } from '@/lib/database/repositories/invoiceRepository';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
@@ -41,7 +54,7 @@ const InvoiceForm = ({
   const [clientPhone, setClientPhone] = useState('');
   const [clientAddress, setClientAddress] = useState('');
   const [notes, setNotes] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [items, setItems] = useState<InvoiceItem[]>([
     { id: generateId(), description: '', quantity: 1, unitPrice: 0, total: 0 },
   ]);
@@ -118,7 +131,7 @@ const InvoiceForm = ({
       notes: notes || undefined,
       status,
       createdAt: new Date(),
-      dueDate: dueDate ? new Date(dueDate) : undefined,
+      dueDate: dueDate || undefined,
       createdBy: currentUser?.name || 'Unknown',
     };
 
@@ -144,7 +157,29 @@ const InvoiceForm = ({
           </div>
           <div>
             <label className="text-sm text-muted-foreground">Due Date</label>
-            <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="mt-1" />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full mt-1 justify-start text-left font-normal",
+                    !dueDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dueDate}
+                  onSelect={setDueDate}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>
@@ -191,20 +226,28 @@ const InvoiceForm = ({
                       </Button>
                     </div>
                     {showProductSearch === item.id && (
-                      <div className="absolute z-50 top-full left-4 right-4 bg-card border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto mt-1">
+                      <div className="absolute z-50 top-full left-4 right-4 bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto mt-1">
                         <div className="p-2 border-b border-border">
                           <Input placeholder="Search products..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} autoFocus />
                         </div>
-                        {filteredProducts.slice(0, 10).map(p => (
+                        {filteredProducts.slice(0, 15).map(p => (
                           <button
                             key={p.id}
                             onClick={() => selectProduct(item.id, p)}
-                            className="w-full text-left px-3 py-2 hover:bg-secondary/50 text-sm flex justify-between"
+                            className="w-full text-left px-3 py-2 hover:bg-secondary/50 text-sm flex justify-between items-center gap-2"
                           >
-                            <span>{p.name}</span>
-                            <span className="text-muted-foreground">{formatPrice(p.price)}</span>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{p.name}</span>
+                              <span className="text-xs text-muted-foreground">{p.sku} • {p.category}</span>
+                            </div>
+                            <span className="text-primary font-semibold whitespace-nowrap">{formatPrice(p.price)}</span>
                           </button>
                         ))}
+                        {searchQuery === '' && (
+                          <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
+                            Showing {Math.min(15, filteredProducts.length)} of {filteredProducts.length} products. Type to search.
+                          </div>
+                        )}
                         {filteredProducts.length === 0 && (
                           <p className="px-3 py-2 text-sm text-muted-foreground">No products found</p>
                         )}
@@ -422,10 +465,12 @@ export const Invoices = () => {
     toast.success(`Invoice marked as ${status}`);
   };
 
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this invoice?')) return;
     await deleteInvoice(id);
     setInvoices(prev => prev.filter(inv => inv.id !== id));
+    setDeleteConfirmId(null);
     toast.success('Invoice deleted');
   };
 
@@ -535,7 +580,7 @@ export const Invoices = () => {
                             {invoice.status !== 'cancelled' && invoice.status !== 'paid' && (
                               <button onClick={() => handleStatusChange(invoice.id, 'cancelled')} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Cancel"><XCircle className="w-4 h-4" /></button>
                             )}
-                            <button onClick={() => handleDelete(invoice.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={() => setDeleteConfirmId(invoice.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Delete"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </td>
                       </tr>
@@ -553,6 +598,23 @@ export const Invoices = () => {
             </div>
           </>
         )}
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this invoice? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   );

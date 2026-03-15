@@ -87,20 +87,17 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const resetDatabase = useCallback(async () => {
     try {
-      // Clear IndexedDB
-      const databases = await indexedDB.databases();
-      for (const db of databases) {
-        if (db.name) {
-          indexedDB.deleteDatabase(db.name);
-        }
-      }
-      // Clear localStorage
-      localStorage.clear();
-      // Reload to reinitialize with fresh data
-      window.location.reload();
+      setIsLoading(true);
+      setError(null);
+      await resetDatabaseKeepAdmin();
+      setIsReady(true);
+      console.log('Database reset complete, admin preserved');
     } catch (err) {
       console.error('Reset failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to reset database');
       throw err;
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 

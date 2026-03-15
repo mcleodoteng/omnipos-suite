@@ -710,6 +710,24 @@ export const Settings = () => {
             Save Settings
           </Button>
         </div>
+
+        {/* Reset Database Confirmation Dialog */}
+        <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset Database</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to reset the database? This will permanently delete all inventory, transactions, invoices, reports, and user data. Only the default admin account will be preserved. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleResetDatabase} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Reset Database
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   );

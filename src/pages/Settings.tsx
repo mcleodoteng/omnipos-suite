@@ -115,15 +115,16 @@ export const Settings = () => {
     }
   };
 
+  const [showResetDialog, setShowResetDialog] = useState(false);
+
   const handleResetDatabase = async () => {
-    if (confirm('Are you sure you want to reset the database? This will delete all data and cannot be undone.')) {
-      try {
-        await resetDatabase();
-        toast.success('Database reset. Refreshing...');
-      } catch (err) {
-        toast.error('Failed to reset database');
-      }
+    try {
+      await resetDatabase();
+      toast.success('Database reset. Refreshing...');
+    } catch (err) {
+      toast.error('Failed to reset database');
     }
+    setShowResetDialog(false);
   };
 
   const handleAddCategory = () => {

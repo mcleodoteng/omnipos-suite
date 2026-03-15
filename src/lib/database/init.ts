@@ -261,3 +261,44 @@ export function closeDatabase(): void {
     initPromise = null;
   }
 }
+
+// Reset database but keep admin user
+export async function resetDatabaseKeepAdmin(): Promise<void> {
+  const database = await getDatabase();
+  
+  // Delete all data from tables except keeping admin user
+  database.run('DELETE FROM transaction_items');
+  database.run('DELETE FROM transactions');
+  database.run('DELETE FROM stock_adjustments');
+  database.run('DELETE FROM invoice_items');
+  database.run('DELETE FROM invoices');
+  database.run('DELETE FROM cash_drawer');
+  database.run('DELETE FROM login_history');
+  database.run('DELETE FROM products');
+  database.run('DELETE FROM categories');
+  // Delete all non-admin users
+  database.run("DELETE FROM users WHERE role != 'admin'");
+  // Reset session
+  database.run('UPDATE current_session SET user_id = NULL WHERE id = 1');
+  
+  // Re-seed default settings
+  const { INITIAL_SETTINGS } = await import('./schema');
+  const settingsStmt = database.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+  Object.entries(INITIAL_SETTINGS).forEach(([key, value]) => {
+    settingsStmt.run([key, value]);
+  });
+  settingsStmt.free();
+  
+  // Re-seed default categories
+  const { categories: defaultCategories } = await import('@/data/mockData');
+  const catStmt = database.prepare('INSERT OR IGNORE INTO categories (id, name, color, icon) VALUES (?, ?, ?, ?)');
+  defaultCategories.forEach(cat => {
+    catStmt.run([cat.id, cat.name, cat.color, cat.icon || null]);
+  });
+  catStmt.free();
+  
+  // Persist the cleaned database
+  await persistDatabase();
+  
+  console.log('Database reset complete - admin user preserved, all other data cleared');
+}

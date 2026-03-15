@@ -162,7 +162,7 @@ export const Users = () => {
                     {isAdmin && user.id !== currentUser?.id && (
                       <button onClick={() => handleResetPin(user)} className="p-2 rounded-lg hover:bg-warning/10 text-muted-foreground hover:text-warning transition-colors" title="Reset PIN"><KeyRound className="w-4 h-4" /></button>
                     )}
-                    <button onClick={() => handleDeleteUser(user.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => setDeleteConfirmUserId(user.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
                 <div className="space-y-2 text-sm">

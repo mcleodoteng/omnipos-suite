@@ -9,6 +9,16 @@ import { toast } from 'sonner';
 import { Product } from '@/types/pos';
 import { ProductModal } from '@/components/inventory/ProductModal';
 import { useCurrency } from '@/hooks/useCurrency';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export const Inventory = () => {
   const { products, setProducts, settings, categories } = usePOS();

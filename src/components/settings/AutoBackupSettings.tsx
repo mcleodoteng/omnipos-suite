@@ -119,9 +119,9 @@ export function AutoBackupSettings({ onSettingsChange }: AutoBackupSettingsProps
     }
   };
 
+  const [deleteConfirmBackupId, setDeleteConfirmBackupId] = useState<string | null>(null);
+
   const handleDeleteBackup = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this backup?')) return;
-    
     try {
       await deleteBackup(id);
       setBackups(backups.filter(b => b.id !== id));
@@ -129,6 +129,7 @@ export function AutoBackupSettings({ onSettingsChange }: AutoBackupSettingsProps
     } catch (error) {
       toast.error('Failed to delete backup');
     }
+    setDeleteConfirmBackupId(null);
   };
 
   const handleDownloadBackup = async (backup: BackupEntry) => {

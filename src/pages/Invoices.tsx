@@ -131,7 +131,7 @@ const InvoiceForm = ({
       notes: notes || undefined,
       status,
       createdAt: new Date(),
-      dueDate: dueDate ? new Date(dueDate) : undefined,
+      dueDate: dueDate || undefined,
       createdBy: currentUser?.name || 'Unknown',
     };
 

@@ -120,7 +120,10 @@ export const Settings = () => {
   const handleResetDatabase = async () => {
     try {
       await resetDatabase();
-      toast.success('Database reset. Refreshing...');
+      await refreshData();
+      setLocalSettings(settings);
+      setCategories(posCategories);
+      toast.success('Database reset successfully! All data cleared except admin account.');
     } catch (err) {
       toast.error('Failed to reset database');
     }

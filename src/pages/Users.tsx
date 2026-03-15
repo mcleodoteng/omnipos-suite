@@ -104,16 +104,17 @@ export const Users = () => {
     }
   };
 
+  const [deleteConfirmUserId, setDeleteConfirmUserId] = useState<string | null>(null);
+
   const handleDeleteUser = async (userId: string) => {
-    if (confirm('Are you sure you want to delete this user?')) {
-      try {
-        await deleteUser(userId);
-        toast.success('User deleted');
-        await loadUsers();
-      } catch (error) {
-        toast.error('Failed to delete user');
-      }
+    try {
+      await deleteUser(userId);
+      toast.success('User deleted');
+      await loadUsers();
+    } catch (error) {
+      toast.error('Failed to delete user');
     }
+    setDeleteConfirmUserId(null);
   };
 
   return (

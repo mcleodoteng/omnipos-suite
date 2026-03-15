@@ -192,6 +192,23 @@ export const Users = () => {
         user={selectedUser} 
       />
       <LoginHistoryModal open={showLoginHistory} onClose={() => setShowLoginHistory(false)} />
+      
+      <AlertDialog open={!!deleteConfirmUserId} onOpenChange={() => setDeleteConfirmUserId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this user? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteConfirmUserId && handleDeleteUser(deleteConfirmUserId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };

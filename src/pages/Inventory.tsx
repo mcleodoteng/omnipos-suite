@@ -145,7 +145,7 @@ export const Inventory = () => {
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => handleViewProduct(product)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="View"><Eye className="w-4 h-4" /></button>
                         <button onClick={() => handleEditProduct(product)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Edit"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => handleDeleteProduct(product.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => setDeleteConfirmProductId(product.id)} className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>

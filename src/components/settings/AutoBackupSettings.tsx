@@ -20,6 +20,16 @@ import {
   BackupEntry,
 } from '@/hooks/useAutoBackup';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface AutoBackupSettingsProps {
   onSettingsChange?: () => void;

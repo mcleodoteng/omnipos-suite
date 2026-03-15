@@ -1,15 +1,28 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, FileText, Printer, Trash2, Eye, Search, Send, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, FileText, Printer, Trash2, Eye, Search, Send, CheckCircle, XCircle, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NumberInput } from '@/components/ui/number-input';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { usePOS } from '@/contexts/POSContext';
 import { useCurrency } from '@/hooks/useCurrency';
 import { toast } from 'sonner';
 import { Invoice, InvoiceItem, Product } from '@/types/pos';
 import { getAllInvoices, createInvoice, updateInvoiceStatus, deleteInvoice, getNextInvoiceNumber } from '@/lib/database/repositories/invoiceRepository';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,

@@ -465,10 +465,12 @@ export const Invoices = () => {
     toast.success(`Invoice marked as ${status}`);
   };
 
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this invoice?')) return;
     await deleteInvoice(id);
     setInvoices(prev => prev.filter(inv => inv.id !== id));
+    setDeleteConfirmId(null);
     toast.success('Invoice deleted');
   };
 

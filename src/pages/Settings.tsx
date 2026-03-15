@@ -296,7 +296,7 @@ export const Settings = () => {
             <Button 
               variant="outline" 
               className="h-auto py-4 border-destructive/30 hover:bg-destructive/10 hover:text-destructive" 
-              onClick={handleResetDatabase}
+              onClick={() => setShowResetDialog(true)}
             >
               <div className="text-center">
                 <Trash2 className="w-6 h-6 mx-auto mb-2" />

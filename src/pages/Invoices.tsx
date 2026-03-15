@@ -54,7 +54,7 @@ const InvoiceForm = ({
   const [clientPhone, setClientPhone] = useState('');
   const [clientAddress, setClientAddress] = useState('');
   const [notes, setNotes] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [items, setItems] = useState<InvoiceItem[]>([
     { id: generateId(), description: '', quantity: 1, unitPrice: 0, total: 0 },
   ]);

@@ -1,5 +1,5 @@
 // Main database exports
-export { getDatabase, persistDatabase, exportDatabase, importDatabase, closeDatabase } from './init';
+export { getDatabase, persistDatabase, exportDatabase, importDatabase, closeDatabase, resetDatabaseKeepAdmin } from './init';
 
 // Repositories
 export * from './repositories/productRepository';

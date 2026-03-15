@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getDatabase, exportDatabase, importDatabase } from '@/lib/database';
+import { getDatabase, exportDatabase, importDatabase, resetDatabaseKeepAdmin } from '@/lib/database';
 
 interface DatabaseContextType {
   isReady: boolean;

@@ -226,20 +226,28 @@ const InvoiceForm = ({
                       </Button>
                     </div>
                     {showProductSearch === item.id && (
-                      <div className="absolute z-50 top-full left-4 right-4 bg-card border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto mt-1">
+                      <div className="absolute z-50 top-full left-4 right-4 bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto mt-1">
                         <div className="p-2 border-b border-border">
                           <Input placeholder="Search products..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} autoFocus />
                         </div>
-                        {filteredProducts.slice(0, 10).map(p => (
+                        {filteredProducts.slice(0, 15).map(p => (
                           <button
                             key={p.id}
                             onClick={() => selectProduct(item.id, p)}
-                            className="w-full text-left px-3 py-2 hover:bg-secondary/50 text-sm flex justify-between"
+                            className="w-full text-left px-3 py-2 hover:bg-secondary/50 text-sm flex justify-between items-center gap-2"
                           >
-                            <span>{p.name}</span>
-                            <span className="text-muted-foreground">{formatPrice(p.price)}</span>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{p.name}</span>
+                              <span className="text-xs text-muted-foreground">{p.sku} • {p.category}</span>
+                            </div>
+                            <span className="text-primary font-semibold whitespace-nowrap">{formatPrice(p.price)}</span>
                           </button>
                         ))}
+                        {searchQuery === '' && (
+                          <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
+                            Showing {Math.min(15, filteredProducts.length)} of {filteredProducts.length} products. Type to search.
+                          </div>
+                        )}
                         {filteredProducts.length === 0 && (
                           <p className="px-3 py-2 text-sm text-muted-foreground">No products found</p>
                         )}

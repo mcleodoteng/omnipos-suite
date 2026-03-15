@@ -11,6 +11,16 @@ import { ResetPinModal } from '@/components/users/ResetPinModal';
 import { LoginHistoryModal } from '@/components/users/LoginHistoryModal';
 import { usePOS } from '@/contexts/POSContext';
 import { getAvatar } from '@/lib/avatarStorage';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export const Users = () => {
   const { currentUser } = usePOS();

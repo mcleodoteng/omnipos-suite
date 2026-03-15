@@ -160,6 +160,23 @@ export const Inventory = () => {
       </div>
 
       <ProductModal open={showModal} onClose={() => setShowModal(false)} onSave={handleSaveProduct} product={selectedProduct} mode={modalMode} />
+      
+      <AlertDialog open={!!deleteConfirmProductId} onOpenChange={() => setDeleteConfirmProductId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Product</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this product? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteConfirmProductId && handleDeleteProduct(deleteConfirmProductId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };

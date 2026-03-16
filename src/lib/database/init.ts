@@ -64,7 +64,6 @@ function runMigrations(database: Database): void {
   // Check if login_history table exists
   const tables = database.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='login_history'");
   if (tables.length === 0 || tables[0].values.length === 0) {
-    console.log('Creating login_history table...');
     database.run(`
       CREATE TABLE IF NOT EXISTS login_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -175,7 +175,7 @@ function initializeDatabase(database: Database): void {
     // Initialize session table
     database.run('INSERT OR IGNORE INTO current_session (id, user_id) VALUES (1, NULL)');
     
-    console.log('Database seeded successfully');
+    // Database seeded
   }
 }
 

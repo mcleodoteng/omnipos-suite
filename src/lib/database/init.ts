@@ -34,9 +34,8 @@ export async function persistDatabase(): Promise<void> {
     const data = db.export();
     const indexedDB = await getIDB();
     await indexedDB.put(IDB_STORE, data, DB_NAME);
-    console.log('Database persisted to IndexedDB');
   } catch (error) {
-    console.error('Error persisting database:', error);
+    // Persistence error - silent
   }
 }
 

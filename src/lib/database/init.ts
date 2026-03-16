@@ -243,7 +243,7 @@ export async function importDatabase(data: Uint8Array): Promise<void> {
   // Reset init promise so future getDatabase calls use this instance
   initPromise = Promise.resolve(db);
   
-  console.log('Database imported successfully');
+  // Database imported
 }
 
 // Close database connection

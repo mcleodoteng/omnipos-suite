@@ -25,15 +25,12 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setError(null);
         await getDatabase();
         setIsReady(true);
-        console.log('SQLite database ready');
       } catch (err) {
-        console.error('Failed to initialize database:', err);
-        setError(err instanceof Error ? err.message : 'Failed to initialize database');
+        setError('Failed to initialize database. Please refresh the page.');
       } finally {
         setIsLoading(false);
       }
     };
-
     initDb();
   }, []);
 
@@ -49,9 +46,8 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Export failed:', err);
-      throw err;
+    } catch {
+      throw new Error('Failed to export database backup.');
     }
   }, []);
 
@@ -63,8 +59,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       await importDatabase(data);
       setIsReady(true);
       return true;
-    } catch (err) {
-      console.error('Import failed:', err);
+    } catch {
       return false;
     } finally {
       setIsLoading(false);
@@ -77,9 +72,8 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setError(null);
       await getDatabase();
       setIsReady(true);
-    } catch (err) {
-      console.error('Failed to reload database:', err);
-      setError(err instanceof Error ? err.message : 'Failed to reload database');
+    } catch {
+      setError('Failed to reload database. Please refresh the page.');
     } finally {
       setIsLoading(false);
     }
@@ -91,11 +85,9 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setError(null);
       await resetDatabaseKeepAdmin();
       setIsReady(true);
-      console.log('Database reset complete, admin preserved');
-    } catch (err) {
-      console.error('Reset failed:', err);
-      setError(err instanceof Error ? err.message : 'Failed to reset database');
-      throw err;
+    } catch {
+      setError('Failed to reset database.');
+      throw new Error('Database reset failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -103,15 +95,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   return (
     <DatabaseContext.Provider
-      value={{
-        isReady,
-        isLoading,
-        error,
-        exportData,
-        importData,
-        resetDatabase,
-        reloadDatabase,
-      }}
+      value={{ isReady, isLoading, error, exportData, importData, resetDatabase, reloadDatabase }}
     >
       {children}
     </DatabaseContext.Provider>

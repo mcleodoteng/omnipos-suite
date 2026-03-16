@@ -164,7 +164,7 @@ export function useAutoBackup(onBackupComplete?: () => void) {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
-      console.log('Auto-backup scheduler stopped');
+      // Auto-backup scheduler stopped
     }
   }, []);
 

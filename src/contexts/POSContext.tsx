@@ -91,12 +91,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSettingsState(loadedSettings);
         setCategoriesState(loadedCategories);
         
-        console.log('Data loaded from SQLite:', {
-          products: loadedProducts.length,
-          transactions: loadedTransactions.length,
-          categories: loadedCategories.length,
-          user: loadedUser?.name,
-        });
+        // Data loaded from SQLite
       } catch (error) {
         console.error('Error loading data from SQLite:', error);
       }

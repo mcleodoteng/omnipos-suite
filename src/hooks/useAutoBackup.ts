@@ -130,7 +130,7 @@ export function useAutoBackup(onBackupComplete?: () => void) {
       onBackupComplete?.();
       // Auto-backup completed
     } catch (error) {
-      console.error('Auto-backup failed:', error);
+      // Auto-backup error - silent
     }
   }, [onBackupComplete]);
 

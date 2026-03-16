@@ -157,7 +157,7 @@ export function useAutoBackup(onBackupComplete?: () => void) {
     }
 
     intervalRef.current = setInterval(performBackup, intervalMs);
-    console.log(`Auto-backup scheduler started: every ${settings.intervalMinutes} minutes`);
+    // Auto-backup scheduler started
   }, [performBackup]);
 
   const stopScheduler = useCallback(() => {

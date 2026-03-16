@@ -186,7 +186,7 @@ export async function getDatabase(): Promise<Database> {
   if (initPromise) return initPromise;
   
   initPromise = (async () => {
-    console.log('Initializing SQLite database...');
+    // Initializing SQLite database
     
     // Initialize sql.js with WASM
     const SQL = await initSqlJs({

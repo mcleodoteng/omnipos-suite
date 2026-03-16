@@ -197,10 +197,8 @@ export async function getDatabase(): Promise<Database> {
     const existingData = await loadFromIndexedDB();
     
     if (existingData) {
-      console.log('Loading existing database from IndexedDB');
       db = new SQL.Database(existingData);
     } else {
-      console.log('Creating new database');
       db = new SQL.Database();
     }
     

@@ -128,7 +128,7 @@ function initializeDatabase(database: Database): void {
   const hasProducts = productCount && productCount.values[0][0] as number > 0;
   
   if (!hasProducts) {
-    console.log('Seeding database with initial data...');
+    // Seed initial data
     
     // Seed categories
     const catStmt = database.prepare(

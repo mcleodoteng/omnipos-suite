@@ -289,16 +289,6 @@ export async function resetDatabaseKeepAdmin(): Promise<void> {
   });
   settingsStmt.free();
   
-  // Re-seed default categories
-  const { categories: defaultCategories } = await import('@/data/mockData');
-  const catStmt = database.prepare('INSERT OR IGNORE INTO categories (id, name, color, icon) VALUES (?, ?, ?, ?)');
-  defaultCategories.forEach(cat => {
-    catStmt.run([cat.id, cat.name, cat.color, cat.icon || null]);
-  });
-  catStmt.free();
-  
   // Persist the cleaned database
   await persistDatabase();
-  
-  console.log('Database reset complete - admin user preserved, all other data cleared');
 }

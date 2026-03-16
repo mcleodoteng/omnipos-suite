@@ -128,9 +128,9 @@ export function useAutoBackup(onBackupComplete?: () => void) {
       });
       
       onBackupComplete?.();
-      console.log('Auto-backup completed at', now.toISOString());
+      // Auto-backup completed
     } catch (error) {
-      console.error('Auto-backup failed:', error);
+      // Auto-backup error - silent
     }
   }, [onBackupComplete]);
 
@@ -157,14 +157,14 @@ export function useAutoBackup(onBackupComplete?: () => void) {
     }
 
     intervalRef.current = setInterval(performBackup, intervalMs);
-    console.log(`Auto-backup scheduler started: every ${settings.intervalMinutes} minutes`);
+    // Auto-backup scheduler started
   }, [performBackup]);
 
   const stopScheduler = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
-      console.log('Auto-backup scheduler stopped');
+      // Auto-backup scheduler stopped
     }
   }, []);
 

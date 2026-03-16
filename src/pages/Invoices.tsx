@@ -208,48 +208,57 @@ const InvoiceForm = ({
               {items.map(item => (
                 <tr key={item.id} className="border-b border-border last:border-0">
                   <td className="py-2 px-4 relative">
-                    <div className="flex gap-2">
-                      <Input 
-                        placeholder="Item description"
-                        value={item.description}
-                        onChange={e => updateItem(item.id, 'description', e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => { setShowProductSearch(showProductSearch === item.id ? null : item.id); setSearchQuery(''); }}
-                        className="shrink-0"
-                        title="Select from inventory"
-                      >
-                        <Search className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <Input 
+                      placeholder="Type to search or enter custom item..."
+                      value={showProductSearch === item.id ? searchQuery : item.description}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setSearchQuery(val);
+                        setShowProductSearch(item.id);
+                        updateItem(item.id, 'description', val);
+                      }}
+                      onFocus={() => {
+                        setShowProductSearch(item.id);
+                        setSearchQuery(item.description);
+                      }}
+                      onBlur={() => {
+                        // Delay to allow click on dropdown
+                        setTimeout(() => setShowProductSearch(null), 200);
+                      }}
+                    />
                     {showProductSearch === item.id && (
                       <div className="absolute z-50 top-full left-4 right-4 bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto mt-1">
-                        <div className="p-2 border-b border-border">
-                          <Input placeholder="Search products..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} autoFocus />
-                        </div>
-                        {filteredProducts.slice(0, 15).map(p => (
-                          <button
-                            key={p.id}
-                            onClick={() => selectProduct(item.id, p)}
-                            className="w-full text-left px-3 py-2 hover:bg-secondary/50 text-sm flex justify-between items-center gap-2"
-                          >
-                            <div className="flex flex-col">
-                              <span className="font-medium">{p.name}</span>
-                              <span className="text-xs text-muted-foreground">{p.sku} • {p.category}</span>
-                            </div>
-                            <span className="text-primary font-semibold whitespace-nowrap">{formatPrice(p.price)}</span>
-                          </button>
-                        ))}
-                        {searchQuery === '' && (
-                          <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
-                            Showing {Math.min(15, filteredProducts.length)} of {filteredProducts.length} products. Type to search.
+                        {filteredProducts.length > 0 ? (
+                          <>
+                            {filteredProducts.slice(0, 15).map(p => (
+                              <button
+                                key={p.id}
+                                onMouseDown={e => e.preventDefault()}
+                                onClick={() => selectProduct(item.id, p)}
+                                className="w-full text-left px-3 py-2 hover:bg-secondary/50 text-sm flex justify-between items-center gap-2"
+                              >
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-foreground">{p.name}</span>
+                                  <span className="text-xs text-muted-foreground">{p.sku} • {p.category} • Stock: {p.stock}</span>
+                                </div>
+                                <span className="text-primary font-semibold whitespace-nowrap">{formatPrice(p.price)}</span>
+                              </button>
+                            ))}
+                            {filteredProducts.length > 15 && (
+                              <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
+                                Showing 15 of {filteredProducts.length} products. Type to narrow results.
+                              </div>
+                            )}
+                          </>
+                        ) : searchQuery.trim() ? (
+                          <div className="px-3 py-3 text-sm text-muted-foreground text-center">
+                            <p>No matching products.</p>
+                            <p className="text-xs mt-1">This will be added as a custom item.</p>
                           </div>
-                        )}
-                        {filteredProducts.length === 0 && (
-                          <p className="px-3 py-2 text-sm text-muted-foreground">No products found</p>
+                        ) : (
+                          <div className="px-3 py-2 text-xs text-muted-foreground">
+                            Type to search inventory or enter a custom item name.
+                          </div>
                         )}
                       </div>
                     )}

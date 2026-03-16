@@ -34,9 +34,8 @@ export async function persistDatabase(): Promise<void> {
     const data = db.export();
     const indexedDB = await getIDB();
     await indexedDB.put(IDB_STORE, data, DB_NAME);
-    console.log('Database persisted to IndexedDB');
   } catch (error) {
-    console.error('Error persisting database:', error);
+    // Persistence error - silent
   }
 }
 
@@ -47,7 +46,6 @@ async function loadFromIndexedDB(): Promise<Uint8Array | null> {
     const data = await indexedDB.get(IDB_STORE, DB_NAME);
     return data || null;
   } catch (error) {
-    console.error('Error loading from IndexedDB:', error);
     return null;
   }
 }
@@ -59,7 +57,6 @@ function runMigrations(database: Database): void {
   if (usersTableInfo.length > 0) {
     const columns = usersTableInfo[0].values.map((row: any) => row[1]);
     if (!columns.includes('avatar_key')) {
-      console.log('Adding avatar_key column to users table...');
       database.run('ALTER TABLE users ADD COLUMN avatar_key TEXT');
     }
   }
@@ -67,7 +64,6 @@ function runMigrations(database: Database): void {
   // Check if login_history table exists
   const tables = database.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='login_history'");
   if (tables.length === 0 || tables[0].values.length === 0) {
-    console.log('Creating login_history table...');
     database.run(`
       CREATE TABLE IF NOT EXISTS login_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,7 +79,6 @@ function runMigrations(database: Database): void {
   // Check if invoices table exists
   const invoicesTables = database.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='invoices'");
   if (invoicesTables.length === 0 || invoicesTables[0].values.length === 0) {
-    console.log('Creating invoices tables...');
     database.run(`
       CREATE TABLE IF NOT EXISTS invoices (
         id TEXT PRIMARY KEY,
@@ -133,7 +128,7 @@ function initializeDatabase(database: Database): void {
   const hasProducts = productCount && productCount.values[0][0] as number > 0;
   
   if (!hasProducts) {
-    console.log('Seeding database with initial data...');
+    // Seed initial data
     
     // Seed categories
     const catStmt = database.prepare(
@@ -180,7 +175,7 @@ function initializeDatabase(database: Database): void {
     // Initialize session table
     database.run('INSERT OR IGNORE INTO current_session (id, user_id) VALUES (1, NULL)');
     
-    console.log('Database seeded successfully');
+    // Database seeded
   }
 }
 
@@ -191,7 +186,7 @@ export async function getDatabase(): Promise<Database> {
   if (initPromise) return initPromise;
   
   initPromise = (async () => {
-    console.log('Initializing SQLite database...');
+    // Initializing SQLite database
     
     // Initialize sql.js with WASM
     const SQL = await initSqlJs({
@@ -202,10 +197,8 @@ export async function getDatabase(): Promise<Database> {
     const existingData = await loadFromIndexedDB();
     
     if (existingData) {
-      console.log('Loading existing database from IndexedDB');
       db = new SQL.Database(existingData);
     } else {
-      console.log('Creating new database');
       db = new SQL.Database();
     }
     
@@ -250,7 +243,7 @@ export async function importDatabase(data: Uint8Array): Promise<void> {
   // Reset init promise so future getDatabase calls use this instance
   initPromise = Promise.resolve(db);
   
-  console.log('Database imported successfully');
+  // Database imported
 }
 
 // Close database connection
@@ -289,16 +282,6 @@ export async function resetDatabaseKeepAdmin(): Promise<void> {
   });
   settingsStmt.free();
   
-  // Re-seed default categories
-  const { categories: defaultCategories } = await import('@/data/mockData');
-  const catStmt = database.prepare('INSERT OR IGNORE INTO categories (id, name, color, icon) VALUES (?, ?, ?, ?)');
-  defaultCategories.forEach(cat => {
-    catStmt.run([cat.id, cat.name, cat.color, cat.icon || null]);
-  });
-  catStmt.free();
-  
   // Persist the cleaned database
   await persistDatabase();
-  
-  console.log('Database reset complete - admin user preserved, all other data cleared');
 }

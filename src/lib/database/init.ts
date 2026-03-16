@@ -46,7 +46,6 @@ async function loadFromIndexedDB(): Promise<Uint8Array | null> {
     const data = await indexedDB.get(IDB_STORE, DB_NAME);
     return data || null;
   } catch (error) {
-    console.error('Error loading from IndexedDB:', error);
     return null;
   }
 }

@@ -57,7 +57,6 @@ function runMigrations(database: Database): void {
   if (usersTableInfo.length > 0) {
     const columns = usersTableInfo[0].values.map((row: any) => row[1]);
     if (!columns.includes('avatar_key')) {
-      console.log('Adding avatar_key column to users table...');
       database.run('ALTER TABLE users ADD COLUMN avatar_key TEXT');
     }
   }

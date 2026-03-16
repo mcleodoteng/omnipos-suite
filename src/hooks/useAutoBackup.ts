@@ -128,7 +128,7 @@ export function useAutoBackup(onBackupComplete?: () => void) {
       });
       
       onBackupComplete?.();
-      console.log('Auto-backup completed at', now.toISOString());
+      // Auto-backup completed
     } catch (error) {
       console.error('Auto-backup failed:', error);
     }

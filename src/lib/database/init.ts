@@ -79,7 +79,6 @@ function runMigrations(database: Database): void {
   // Check if invoices table exists
   const invoicesTables = database.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='invoices'");
   if (invoicesTables.length === 0 || invoicesTables[0].values.length === 0) {
-    console.log('Creating invoices tables...');
     database.run(`
       CREATE TABLE IF NOT EXISTS invoices (
         id TEXT PRIMARY KEY,
